@@ -18,7 +18,7 @@ SLURM_JOB_ID = os.getenv("SLURM_JOB_ID")
 wandb.login(key=WANDB_API_KEY)
 
 
-def calculate_identity_baseline_loss(dataloader, device="cuda", criterion=None):
+def calculate_identity_baseline_loss(dataloader, device, criterion=None):
     """
     Calculate validation loss using identity operation (input = output) as baseline.
 
