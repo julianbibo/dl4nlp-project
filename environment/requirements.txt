@@ -3,3 +3,4 @@ torchvision
 transformers
 datasets
 peft
+python-dotenv
