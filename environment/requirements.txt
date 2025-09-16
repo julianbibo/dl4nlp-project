@@ -4,3 +4,4 @@ transformers
 datasets
 peft
 python-dotenv
+unbabel-comet>=2.1.0
