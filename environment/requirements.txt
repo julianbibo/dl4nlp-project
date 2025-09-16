@@ -3,5 +3,7 @@ torchvision
 transformers
 datasets
 peft
+wandb
+numpy
 python-dotenv
 unbabel-comet>=2.1.0
