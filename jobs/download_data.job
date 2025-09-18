@@ -4,16 +4,19 @@
 #SBATCH --cpus-per-task=1                   # cpu-cores per task (>1 if multi-threaded tasks), 4 is default
 #SBATCH --gpus=1                            # number of gpus per node
 #SBATCH --partition=gpu_mig              # partition
-#SBATCH --time=00:20:00                     # total run time limit (HH:MM:SS)
+#SBATCH --time=00:40:00                     # total run time limit (HH:MM:SS)
 #SBATCH --output=logs/%x/%j.log            # output file
 
 source deactivate
-# cd ~/dl4nlp-project  # for snellius
-python -m venv ../.env
-source ../.env/bin/activate
-pip install -r ../environment/requirements.txt  # install env
-python -c "import torch; print(torch.__version__); print('CUDA:', torch.cuda.is_available())"  # check torch version
+cd ~/dl4nlp-project  # sanity check, for snellius
+python -m venv .venv
+source .venv/bin/activate
+cd data
+pip install mtdata==0.4.0
 
+for ri in wmt23-{enzh,zhen,ende,deen,enhe,heen,enja,jaen,enru,ruen,encs,csuk,enuk,uken}; do
+  mtdata get-recipe -ri $ri -o $ri -j 9 --n-jobs 9
+done
 ############################################################
 
-# python ../src/xyz.py
+# python src/xyz.py

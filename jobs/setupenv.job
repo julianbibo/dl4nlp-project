@@ -10,8 +10,10 @@
 ############################################################
 source deactivate
 cd ~/dl4nlp-project  # sanity check, for snellius
+python -m venv .venv
 source .venv/bin/activate
+pip install -r environment/requirements.txt  # install env
 python -c "import torch; print('Torch version:', torch.__version__); print('CUDA check:', torch.cuda.is_available())"  # check torch version
 ############################################################
 
-python src/train.py
+# python src/xyz.py
