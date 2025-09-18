@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+import argparse, torch
+from datasets import load_dataset
+import evaluate
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import __version__ as transformers_version
+from tqdm import tqdm
+
+def parse_args():
+    p = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
+    p.add_argument("--model", required=True)
+    p.add_argument("--dataset", required=True)
+    p.add_argument("--dataset_config", default=None)
+    p.add_argument("--split", default="test")
+    p.add_argument("--source_lang", required=True)
+    p.add_argument("--target_lang", required=True)
+    p.add_argument("--batch_size", type=int, default=8)
+    p.add_argument("--beam_size", type=int, default=5)
+    p.add_argument("--length_penalties", default="0.8",
+                   help="comma-separated values, e.g. 0.6,0.8,1.0")
+    p.add_argument("--comet_model", default="Unbabel/wmt22-comet-da")
+    p.add_argument("--cometkiwi_model", default="Unbabel/wmt22-cometkiwi-da")
+    return p.parse_args()
+
+def main():
+    print(f"Transformers version: {transformers_version}")
+    args = parse_args()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    ds = load_dataset(args.dataset, args.dataset_config, split=args.split)
+
+    # metrics
+    comet = evaluate.load("comet", revision="main")
+    kiwi  = evaluate.load("cometkiwi", revision="main")
+    chrf  = evaluate.load("chrf", revision="main")
+
+    tok = AutoTokenizer.from_pretrained(args.model)
+    model = AutoModelForSeq2SeqLM.from_pretrained(args.model).to(device).eval()
+
+    sources, references = [], []
+    for ex in ds:
+        if "translation" in ex:
+            tr = ex["translation"]
+            sources.append(tr[args.source_lang])
+            references.append(tr[args.target_lang])
+        else:
+            sources.append(ex[args.source_lang])
+            references.append(ex[args.target_lang])
+
+    lps = [float(x) for x in args.length_penalties.split(",")]
+
+    for lp in lps:
+        preds = []
+        for i in tqdm(range(0, len(sources), args.batch_size), desc=f"LP={lp}"):
+            batch = sources[i:i+args.batch_size]
+            enc = tok(batch, return_tensors="pt", padding=True, truncation=True).to(device)
+            out = model.generate(**enc, num_beams=args.beam_size,
+                                 max_length=tok.model_max_length,
+                                 length_penalty=lp, early_stopping=False)
+            preds.extend(tok.batch_decode(out, skip_special_tokens=True))
+
+        # chrF++
+        chrf_score = chrf.compute(predictions=preds,
+                                  references=[[r] for r in references])["score"]
+
+        # COMET
+        comet_score = comet.compute(predictions=preds, references=references, sources=sources,
+                                    model=args.comet_model)["mean_score"]
+
+        # COMETKiwi
+        kiwi_score = kiwi.compute(predictions=preds, sources=sources,
+                                  model=args.cometkiwi_model)["mean_score"]
+
+        print(f"length_penalty={lp:.2f} → chrF++: {chrf_score:.2f}, COMET: {comet_score:.3f}, CometKiwi: {kiwi_score:.3f}")
+
+if __name__ == "__main__":
+    main()
