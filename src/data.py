@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 import os, copy
 from typing import Tuple
 
-IGNORE_TOKEN = -100 # TODO: set in loss function
+IGNORE_TOKEN = -100
 
 def full_lang_name(abbr: str):
     """ 
