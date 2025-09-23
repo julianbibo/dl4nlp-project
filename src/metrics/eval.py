@@ -1,10 +1,24 @@
-#!/usr/bin/env python
-import argparse, torch
+import argparse
+import os
+from uuid import uuid4
+
+import torch
 from datasets import load_dataset
 import evaluate
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import __version__ as transformers_version
 from tqdm import tqdm
+from dotenv import load_dotenv
+
+
+load_dotenv("./environment/.env")
+WANDB_API_KEY = os.getenv("WANDB_API_KEY")
+SLURM_JOB_ID = os.getenv("SLURM_JOB_ID") or "local-" + uuid4().hex[:8]
+os.makedirs("results", exist_ok=True)
+if not os.path.exists("results.csv"):
+    with open("results.csv", "w") as f:
+        f.write("job_id,model,dataset,lp,chrf,comet,cometkiwi\n")
+
 
 def parse_args():
     p = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
@@ -16,11 +30,15 @@ def parse_args():
     p.add_argument("--target_lang", required=True)
     p.add_argument("--batch_size", type=int, default=8)
     p.add_argument("--beam_size", type=int, default=5)
-    p.add_argument("--length_penalties", default="0.8",
-                   help="comma-separated values, e.g. 0.6,0.8,1.0")
+    p.add_argument(
+        "--length_penalties",
+        default="0.8",
+        help="comma-separated values, e.g. 0.6,0.8,1.0",
+    )
     p.add_argument("--comet_model", default="Unbabel/wmt22-comet-da")
     p.add_argument("--cometkiwi_model", default="Unbabel/wmt22-cometkiwi-da")
     return p.parse_args()
+
 
 def main():
     print(f"Transformers version: {transformers_version}")
@@ -31,8 +49,8 @@ def main():
 
     # metrics
     comet = evaluate.load("comet", revision="main")
-    kiwi  = evaluate.load("cometkiwi", revision="main")
-    chrf  = evaluate.load("chrf", revision="main")
+    kiwi = evaluate.load("cometkiwi", revision="main")
+    chrf = evaluate.load("chrf", revision="main")
 
     tok = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model).to(device).eval()
@@ -52,26 +70,47 @@ def main():
     for lp in lps:
         preds = []
         for i in tqdm(range(0, len(sources), args.batch_size), desc=f"LP={lp}"):
-            batch = sources[i:i+args.batch_size]
-            enc = tok(batch, return_tensors="pt", padding=True, truncation=True).to(device)
-            out = model.generate(**enc, num_beams=args.beam_size,
-                                 max_length=tok.model_max_length,
-                                 length_penalty=lp, early_stopping=False)
+            batch = sources[i : i + args.batch_size]
+            enc = tok(batch, return_tensors="pt", padding=True, truncation=True).to(
+                device
+            )
+            out = model.generate(
+                **enc,
+                num_beams=args.beam_size,
+                max_length=tok.model_max_length,
+                length_penalty=lp,
+                early_stopping=False,
+            )
             preds.extend(tok.batch_decode(out, skip_special_tokens=True))
 
         # chrF++
-        chrf_score = chrf.compute(predictions=preds,
-                                  references=[[r] for r in references])["score"]
+        chrf_score = chrf.compute(
+            predictions=preds, references=[[r] for r in references]
+        )["score"]
 
         # COMET
-        comet_score = comet.compute(predictions=preds, references=references, sources=sources,
-                                    model=args.comet_model)["mean_score"]
+        comet_score = comet.compute(
+            predictions=preds,
+            references=references,
+            sources=sources,
+            model=args.comet_model,
+        )["mean_score"]
 
         # COMETKiwi
-        kiwi_score = kiwi.compute(predictions=preds, sources=sources,
-                                  model=args.cometkiwi_model)["mean_score"]
+        kiwi_score = kiwi.compute(
+            predictions=preds, sources=sources, model=args.cometkiwi_model
+        )["mean_score"]
 
-        print(f"length_penalty={lp:.2f} → chrF++: {chrf_score:.2f}, COMET: {comet_score:.3f}, CometKiwi: {kiwi_score:.3f}")
+        print(
+            f"length_penalty={lp:.2f} → chrF++: {chrf_score:.3f}, COMET: {comet_score:.3f}, CometKiwi: {kiwi_score:.3f}"
+        )
+
+        # log to results.csv
+        with open("results.csv", "a") as f:
+            f.write(
+                f"{SLURM_JOB_ID},{args.model},{args.dataset},{lp},{chrf_score:.3f},{comet_score:.3f},{kiwi_score:.3f}\n"
+            )
+
 
 if __name__ == "__main__":
     main()

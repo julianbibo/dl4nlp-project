@@ -9,3 +9,4 @@ python-dotenv
 unbabel-comet>=2.1.0
 tqdm
 mtdata==0.4.0
+evaluate

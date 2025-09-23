@@ -8,7 +8,6 @@
 #SBATCH --output=logs/%x/%j.log            # output file
 
 ############################################################
-source deactivate
 cd ~/dl4nlp-project  # sanity check, for snellius
 python -m venv .venv
 source .venv/bin/activate
