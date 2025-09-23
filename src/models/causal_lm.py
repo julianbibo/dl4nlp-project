@@ -43,7 +43,8 @@ class NMTModel:
 
         generated_ids = self.model.generate(
             model_inputs.input_ids,
-            max_new_tokens=512
+            max_new_tokens=512,
+            attention_mask=model_inputs.attention_mask,
         )
         generated_ids = [
             output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
