@@ -22,7 +22,7 @@ class EncoderTrainer(Trainer):
         self.collate_fn = partial(collate_translations, tokenizer=tokenizer, prompt_form=prompt_skeleton)
 
     def get_train_dataloader(self):
-        return DataLoader(
+        return DataLoader( # TODO: use accelerator.prepare?
             self.train_dataset,
             batch_size=self.args.train_batch_size,
             collate_fn=self.collate_fn
