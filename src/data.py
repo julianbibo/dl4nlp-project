@@ -82,7 +82,7 @@ class Medline(Dataset):
         return source, target
     
 
-class Medline(Dataset):
+class Mantra(Dataset):
     def __init__(self, lang_from: str, lang_to: str, folder: str):
         """
         Loads biomedical dataset from Medline or converted Mantra corpus.
@@ -98,7 +98,7 @@ class Medline(Dataset):
             120_pt.txt
         """
 
-        VALID_LANGS = { "es", "fr", "pt", "de", "it", "ru", "en" }
+        VALID_LANGS = { "es", "de", "nl", "fr"}
         
         assert lang_from in VALID_LANGS, f"Specified language '{lang_from}' is not valid! (must be one of {VALID_LANGS})"
         assert lang_to in VALID_LANGS, f"Specified language '{lang_to}' is not valid! (must be one of {VALID_LANGS})"
