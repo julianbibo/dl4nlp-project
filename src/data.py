@@ -81,6 +81,63 @@ class Medline(Dataset):
 
         return source, target
     
+
+class Medline(Dataset):
+    def __init__(self, lang_from: str, lang_to: str, folder: str):
+        """
+        Loads biomedical dataset from Medline or converted Mantra corpus.
+        Samples will be in the language specified by `lang_from`
+        and labels in the language `lang_to`. One language must be 'en' (English),
+        the other one of {'es', 'fr', 'pt', 'de', 'it', 'ru'}.
+
+        Reads from the directory {folder}/en_{other language}.
+        File names inside that directory must follow:
+            {file id}_{language}.txt
+        e.g.:
+            120_en.txt
+            120_pt.txt
+        """
+
+        VALID_LANGS = { "es", "fr", "pt", "de", "it", "ru", "en" }
+        
+        assert lang_from in VALID_LANGS, f"Specified language '{lang_from}' is not valid! (must be one of {VALID_LANGS})"
+        assert lang_to in VALID_LANGS, f"Specified language '{lang_to}' is not valid! (must be one of {VALID_LANGS})"
+        assert lang_from == "en" or lang_to == "en", "One of the languages must be English!"
+        assert lang_from != lang_to, "The source and target language must differ!"
+
+        # the language that is not English
+        other_lang = lang_from if lang_from != "en" else lang_to
+
+        self.data_dir = os.path.join(folder, f"en_{other_lang}")
+
+        # load unique file IDs
+        self.ids = sorted(set(f.split("_")[0] for f in os.listdir(self.data_dir)))
+
+        self.lang_from = lang_from
+        self.lang_to = lang_to
+
+    def __len__(self):
+        return len(self.ids)
+
+    def _read_file(self, idx, lang) -> str:
+        """
+        Reads the contents of a language file for a given ID and language.
+        """
+
+        path = os.path.join(self.data_dir, f"{idx}_{lang}.txt")
+        with open(path, "r", encoding="utf-8") as file:
+            return file.read().rstrip()
+    
+    def __getitem__(self, index) -> Tuple[str, str]:
+        """
+        Fetches a (source, target) pair.
+        """
+
+        idx = self.ids[index]
+        source = self._read_file(idx, self.lang_from)
+        target = self._read_file(idx, self.lang_to)
+        return source, target
+
 def get_translation_prompt_skeleton(lang_from: str, lang_to: str) -> str:
     """
     Returns a translation prompt skeleton with the source yet to be plugged in.
