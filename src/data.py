@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 import os, copy
-from typing import Tuple
+from typing import Tuple, Set
 
 IGNORE_TOKEN = -100 # TODO: set in loss function
 
@@ -21,8 +21,10 @@ def full_lang_name(abbr: str):
 
     return NAMES[abbr]
 
-class Medline(Dataset):
-    def __init__(self, lang_from: str, lang_to: str, folder: str):
+class MedDataset(Dataset):
+    """ A medical dataset."""
+
+    def __init__(self, lang_from: str, lang_to: str, folder: str, valid_langs: Set[str]):
         """
         Loads biomedical dataset from the medline corpus 2022.
         Samples will be in the language specified by `lang_from`
@@ -31,12 +33,10 @@ class Medline(Dataset):
 
         Reads from the directory {folder}/en_{other language} (e.g., wmt22/en_pt). Assumes file names within that directory 
         follow the following convention: {file id}_{language}.txt (e.g., for file ID 120 we need files 120_en.txt and 120_pt.txt for english to/from portuguese).
-        """
+        """              
 
-        VALID_LANGS = { "es", "fr", "pt", "de", "it", "ru", "en" }
-        
-        assert lang_from in VALID_LANGS, f"Specified language '{lang_from}' is not valid! (must be one of {VALID_LANGS})"
-        assert lang_to in VALID_LANGS, f"Specified language '{lang_to}' is not valid! (must be one of {VALID_LANGS})"
+        assert lang_from in valid_langs, f"Specified language '{lang_from}' is not valid! (must be one of {valid_langs})"
+        assert lang_to in valid_langs, f"Specified language '{lang_to}' is not valid! (must be one of {valid_langs})"
         assert lang_from == "en" or lang_to == "en", "One of the languages must be english!"
         assert lang_from != lang_to, "The from and to language may not be the same!"
 
@@ -53,6 +53,7 @@ class Medline(Dataset):
 
         self.lang_from = lang_from
         self.lang_to = lang_to
+        self.valid_langs = valid_langs
 
     def __len__(self):
         return len(self.ids)
@@ -81,62 +82,21 @@ class Medline(Dataset):
 
         return source, target
     
+class Medline(MedDataset):
+    """ MEDLINE dataset, which consists of abstracts of biomedical papers. """
 
-class Mantra(Dataset):
-    def __init__(self, lang_from: str, lang_to: str, folder: str):
-        """
-        Loads biomedical dataset from Medline or converted Mantra corpus.
-        Samples will be in the language specified by `lang_from`
-        and labels in the language `lang_to`. One language must be 'en' (English),
-        the other one of {'es', 'fr', 'pt', 'de', 'it', 'ru'}.
+    def __init__(self, lang_from, lang_to, folder):
+        VALID_LANGS = { "es", "fr", "pt", "de", "it", "ru", "en" }
 
-        Reads from the directory {folder}/en_{other language}.
-        File names inside that directory must follow:
-            {file id}_{language}.txt
-        e.g.:
-            120_en.txt
-            120_pt.txt
-        """
+        super().__init__(lang_from, lang_to, folder, VALID_LANGS)
 
+class Matra(MedDataset):
+    """ Term-to-term dictionary dataset, which consists of biomedical terms. """
+
+    def __init__(self, lang_from, lang_to, folder):
         VALID_LANGS = { "es", "de", "nl", "fr"}
-        
-        assert lang_from in VALID_LANGS, f"Specified language '{lang_from}' is not valid! (must be one of {VALID_LANGS})"
-        assert lang_to in VALID_LANGS, f"Specified language '{lang_to}' is not valid! (must be one of {VALID_LANGS})"
-        assert lang_from == "en" or lang_to == "en", "One of the languages must be English!"
-        assert lang_from != lang_to, "The source and target language must differ!"
 
-        # the language that is not English
-        other_lang = lang_from if lang_from != "en" else lang_to
-
-        self.data_dir = os.path.join(folder, f"en_{other_lang}")
-
-        # load unique file IDs
-        self.ids = sorted(set(f.split("_")[0] for f in os.listdir(self.data_dir)))
-
-        self.lang_from = lang_from
-        self.lang_to = lang_to
-
-    def __len__(self):
-        return len(self.ids)
-
-    def _read_file(self, idx, lang) -> str:
-        """
-        Reads the contents of a language file for a given ID and language.
-        """
-
-        path = os.path.join(self.data_dir, f"{idx}_{lang}.txt")
-        with open(path, "r", encoding="utf-8") as file:
-            return file.read().rstrip()
-    
-    def __getitem__(self, index) -> Tuple[str, str]:
-        """
-        Fetches a (source, target) pair.
-        """
-
-        idx = self.ids[index]
-        source = self._read_file(idx, self.lang_from)
-        target = self._read_file(idx, self.lang_to)
-        return source, target
+        super().__init__(lang_from, lang_to, folder, VALID_LANGS)
 
 def get_translation_prompt_skeleton(lang_from: str, lang_to: str) -> str:
     """
