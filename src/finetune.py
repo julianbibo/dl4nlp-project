@@ -5,9 +5,8 @@ from uuid import uuid4
 
 import torch
 
-# from models.causal_lm import NMTModel
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM
-from transformers import TrainingArguments, Trainer
+from transformers import TrainingArguments, Trainer, TrainerCallback
 from peft import LoraConfig, TaskType, get_peft_model
 from torch.utils.data import DataLoader, random_split
 from data import (
@@ -16,8 +15,10 @@ from data import (
     get_translation_prompt_skeleton,
     full_lang_name,
 )
+import models
 import wandb
 from dotenv import load_dotenv
+
 
 load_dotenv("./environment/.env")
 WANDB_API_KEY = os.getenv("WANDB_API_KEY")
@@ -123,6 +124,18 @@ def parse_args():
         help="Random seed for initialization.",
     )
     parser.add_argument(
+        "--learn_rate",
+        type=float,
+        default=1e-3,
+        help="Learning rate during training."
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=1,
+        help="Number of epochs to train for."
+    )
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=16,
@@ -136,12 +149,19 @@ def parse_args():
     )
 
     args = parser.parse_args()
-    # log to wandb
-    args.output_dir = os.path.join(args.checkpoint_dir, f"finetune-{SLURM_JOB_ID}")
+
+    run_name = f"{args.source_language}_{args.target_language}"
+    args.output_dir = os.path.join(
+        args.checkpoint_dir,
+        run_name,
+        f"finetune-{SLURM_JOB_ID}"
+    )
     os.makedirs(args.output_dir, exist_ok=True)
+
     print(f"Output directory: {args.output_dir}")
     print(f"Args: {args}")
 
+    # log to wandb
     wandb.init(
         project="dl4nlp-project",
         name=f"finetune-{SLURM_JOB_ID}",
@@ -156,53 +176,21 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+
+    # set seed
     torch.manual_seed(args.seed)
 
-    # load model
-    if args.model.lower() in {"qwen2-7b"}:
-        args.model = "Qwen/Qwen2-7B"
-        model_cls = AutoModelForCausalLM
-
-    elif args.model.lower() in {"qwen2-0.5b", "qwen2-0.5b-instruct"}:
-        args.model = "Qwen/Qwen2-0.5B-Instruct"
-        model_cls = AutoModelForCausalLM
-
-    elif args.model.lower() in {"nllb-200-distilled-600m"}:
-        args.model = "facebook/nllb-200-distilled-600M"
-        model_cls = AutoModelForSeq2SeqLM
-
-    elif args.model.lower() in {
-        "llama-3.2-3b",
-        "llama-3-3b",
-        "llama-3.2-3b-instruct",
-        "llama-3-3b-instruct",
-    }:
-        args.model = "meta-llama/Llama-3.2-3B-Instruct"
-        model_cls = AutoModelForCausalLM
-
-    elif args.model.lower() in {"qwen2-1.5b"}:
-        args.model = "Qwen/Qwen2-1.5B"
-        model_cls = AutoModelForCausalLM
-
-    else:
-        raise NotImplementedError(f"Model {args.model} not supported.")
-
-    # load tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = model_cls.from_pretrained(
-        args.model,
-        device_map=args.device,
-        dtype=args.dtype,
-    )
+    # load model and tokenizer
+    model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
     dataset = Medline(args.source_language, args.target_language, args.train_dir)
     train_dataset, test_dataset = random_split(dataset, [0.8, 0.2])
     assert train_dataset and test_dataset, "Datasets may not be empty!"
+    
     print("train/test dataset lengths:", len(train_dataset), len(test_dataset))
 
     # load finetuneable model
-    # TODO: find good LR
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
@@ -215,38 +203,32 @@ if __name__ == "__main__":
     model_peft.print_trainable_parameters()
 
     # setup trainer
-    # TODO: find good parameters
     # TODO: maximize batch sizes
     training_args = TrainingArguments(
         output_dir=args.output_dir,
-        learning_rate=1e-3,
+        learning_rate=args.learn_rate,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        num_train_epochs=5,
+        num_train_epochs=args.epochs,
         weight_decay=0.01,
         eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
     )
 
-    # TODO: find good parameters
-    # TODO: set ignore_index in the loss function
     trainer = EncoderTrainer(
         # prompt used for aiding the model to make translations
         prompt_skeleton=get_translation_prompt_skeleton(
             full_lang_name(dataset.lang_from), full_lang_name(dataset.lang_to)
         ),
         tokenizer=tokenizer,
-        model=model,
+        model=model_peft,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
         processing_class=tokenizer,
         compute_metrics=None,
     )
-
-    # TODO wandb logging callback for Trainer object example code
-    from transformers import TrainerCallback
 
     # def compute_bleu(preds, labels, tokenizer):
     #     pred_str = tokenizer.batch_decode(preds, skip_special_tokens=True)
