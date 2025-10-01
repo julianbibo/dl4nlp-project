@@ -5,10 +5,9 @@ from uuid import uuid4
 
 import torch
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM
 from transformers import TrainingArguments, Trainer, TrainerCallback
 from peft import LoraConfig, TaskType, get_peft_model
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from data import (
     Medline,
     collate_translations,
@@ -112,10 +111,10 @@ def parse_args():
         help="Device to run the training on.",
     )
     parser.add_argument(
-        "--train_dir",
+        "--data_dir",
         type=str,
         required=True,
-        help="Path to the training dataset.",
+        help="Path to the dataset.",
     )
     parser.add_argument(
         "--seed",
@@ -154,7 +153,7 @@ def parse_args():
     args.output_dir = os.path.join(
         args.checkpoint_dir,
         run_name,
-        f"finetune-{SLURM_JOB_ID}"
+        f"finetune-lr={args.learn_rate}-{SLURM_JOB_ID}"
     )
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -176,6 +175,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    print("Args:", args)
 
     # set seed
     torch.manual_seed(args.seed)
@@ -184,8 +184,9 @@ if __name__ == "__main__":
     model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
-    dataset = Medline(args.source_language, args.target_language, args.train_dir)
-    train_dataset, test_dataset = random_split(dataset, [0.8, 0.2])
+    dataset = Medline(args.source_language, args.target_language, args.data_dir)
+    
+    train_dataset, test_dataset = dataset.train_test_split()
     assert train_dataset and test_dataset, "Datasets may not be empty!"
     
     print("train/test dataset lengths:", len(train_dataset), len(test_dataset))

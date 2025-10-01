@@ -1,7 +1,8 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Subset
 import os
 import copy
 from collections import Counter
+from random import Random
 from typing import Tuple, Set
 
 IGNORE_TOKEN = -100  # TODO: set in loss function
@@ -41,6 +42,8 @@ class MedDataset(Dataset):
         follow the following convention: {file id}_{language}.txt (e.g., for file ID 120 we need files 120_en.txt and 120_pt.txt for english to/from portuguese).
         """
 
+        SHUFFLE_SEED = 391
+
         assert lang_from in valid_langs, (
             f"Specified language '{lang_from}' is not valid! (must be one of {valid_langs})"
         )
@@ -63,11 +66,25 @@ class MedDataset(Dataset):
             ids.append(file.split("_")[0])
 
         # filter entries that don't have a translation
-        self.ids = [idx for idx, count in Counter(ids).items() if count == 2]
+        ids = [idx for idx, count in Counter(ids).items() if count == 2]
+
+        # shuffle deterministically
+        self.ids = sorted(ids)
+        Random(SHUFFLE_SEED).shuffle(self.ids)
 
         self.lang_from = lang_from
         self.lang_to = lang_to
         self.valid_langs = valid_langs
+
+    def train_test_split(self) -> Tuple[Subset, Subset]:
+        """
+        Returns a deterministic train/test split of 80%/20%.
+        """
+
+        total_samples = len(self)
+        train_samples = int(total_samples * 0.8)
+
+        return Subset(self, list(range(train_samples))), Subset(list(range(train_samples, total_samples)))
 
     def __len__(self):
         return len(self.ids)

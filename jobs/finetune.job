@@ -22,7 +22,7 @@ python src/finetune.py \
   --model qwen2-1.5b \
   --source_language en \
   --target_language de \
-  --train_dir data/wmt22 \
+  --data_dir data/wmt22 \
   --learn_rate 1e-3 \
   --epochs 1 \
   --batch_size 4 \

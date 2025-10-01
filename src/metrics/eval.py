@@ -10,6 +10,9 @@ from transformers import __version__ as transformers_version
 from tqdm import tqdm
 from dotenv import load_dotenv
 
+import models
+from data import Medline
+
 
 load_dotenv("./environment/.env")
 WANDB_API_KEY = os.getenv("WANDB_API_KEY")
@@ -24,12 +27,14 @@ def parse_args():
     parser = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
     parser.add_argument("--model", required=True)
     parser.add_argument("--dataset", required=True)
+    parser.add_argument("--data_dir", type=str, required=True)
     parser.add_argument("--dataset_config", default=None)
     parser.add_argument("--split", default="test")
     parser.add_argument("--source_lang", required=True)
     parser.add_argument("--target_lang", required=True)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--beam_size", type=int, default=5)
+    parser.add_argument("--dtype", type=str, default="float16")
     parser.add_argument(
         "--length_penalties",
         default="0.8",
@@ -43,17 +48,25 @@ def parse_args():
 def main():
     print(f"Transformers version: {transformers_version}")
     args = parse_args()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ds = load_dataset(args.dataset, args.dataset_config, split=args.split)
+    # TODO: load dataset (how to get correct random split?)
+    train_ds, test_ds = Medline(args.source_language, args.target_language, args.data_dir).train_test_split()
+
+    if args.split == "test":
+        ds = test_ds
+    elif args.split == "train":
+        ds = train_ds
+    else:
+        raise NotImplementedError(f"Datasplit {args.split} not recognized! Must be on of {{'test', 'train'}}")
 
     # metrics
     comet = evaluate.load("comet", revision="main")
     kiwi = evaluate.load("cometkiwi", revision="main")
     chrf = evaluate.load("chrf", revision="main")
 
-    tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForSeq2SeqLM.from_pretrained(args.model).to(device).eval()
+    model, tok = models.load(args.model, device, args.dtype)
 
     sources, references = [], []
     for ex in ds:
