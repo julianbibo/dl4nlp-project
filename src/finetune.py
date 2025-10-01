@@ -123,16 +123,10 @@ def parse_args():
         help="Random seed for initialization.",
     )
     parser.add_argument(
-        "--learn_rate",
-        type=float,
-        default=1e-3,
-        help="Learning rate during training."
+        "--learn_rate", type=float, default=1e-3, help="Learning rate during training."
     )
     parser.add_argument(
-        "--epochs",
-        type=int,
-        default=1,
-        help="Number of epochs to train for."
+        "--epochs", type=int, default=1, help="Number of epochs to train for."
     )
     parser.add_argument(
         "--batch_size",
@@ -150,10 +144,9 @@ def parse_args():
     args = parser.parse_args()
 
     run_name = f"{args.source_language}_{args.target_language}"
+    # TODO: incorporate model name
     args.output_dir = os.path.join(
-        args.checkpoint_dir,
-        run_name,
-        f"finetune-lr={args.learn_rate}-{SLURM_JOB_ID}"
+        args.checkpoint_dir, run_name, f"finetune-lr={args.learn_rate}-{SLURM_JOB_ID}"
     )
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -184,11 +177,11 @@ if __name__ == "__main__":
     model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
-    dataset = Medline(args.source_language, args.target_language, args.data_dir)
-    
-    train_dataset, test_dataset = dataset.train_test_split()
+    medline = Medline(args.source_language, args.target_language, args.data_dir)
+
+    train_dataset, test_dataset = medline.train_test_split()
     assert train_dataset and test_dataset, "Datasets may not be empty!"
-    
+
     print("train/test dataset lengths:", len(train_dataset), len(test_dataset))
 
     # load finetuneable model
@@ -199,7 +192,7 @@ if __name__ == "__main__":
         lora_alpha=32,
         lora_dropout=0.1,
     )
-    model_peft = get_peft_model(model, peft_config)
+    model_peft = get_peft_model(model, peft_config)  # type: ignore
 
     model_peft.print_trainable_parameters()
 
@@ -220,7 +213,7 @@ if __name__ == "__main__":
     trainer = EncoderTrainer(
         # prompt used for aiding the model to make translations
         prompt_skeleton=get_translation_prompt_skeleton(
-            full_lang_name(dataset.lang_from), full_lang_name(dataset.lang_to)
+            full_lang_name(medline.lang_from), full_lang_name(medline.lang_to)
         ),
         tokenizer=tokenizer,
         model=model_peft,

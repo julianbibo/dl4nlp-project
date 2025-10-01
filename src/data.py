@@ -84,7 +84,9 @@ class MedDataset(Dataset):
         total_samples = len(self)
         train_samples = int(total_samples * 0.9)
 
-        return Subset(self, list(range(train_samples))), Subset(self, list(range(train_samples, total_samples)))
+        return Subset(self, list(range(train_samples))), Subset(
+            self, list(range(train_samples, total_samples))
+        )
 
     def __len__(self):
         return len(self.ids)

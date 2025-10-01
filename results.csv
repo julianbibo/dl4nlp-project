@@ -1,0 +1,5 @@
+job_id,model,dataset,lp,chrf,comet,cometkiwi
+15049445,Qwen/Qwen2-1.5B-Instruct,0.8,48.073,-1,-1
+15049885,Qwen/Qwen2-1.5B-Instruct,0.8,48.912,-1,-1
+15049892,Qwen/Qwen2-1.5B-Instruct,0.8,48.554,-1,-1
+15049948,Qwen/Qwen2-1.5B-Instruct,0.8,48.713,-1,-1

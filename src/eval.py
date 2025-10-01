@@ -1,44 +1,45 @@
 import argparse
 import os
 from uuid import uuid4
+import time
 
 import torch
-from datasets import load_dataset
 import evaluate
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import __version__ as transformers_version
 from tqdm import tqdm
 from dotenv import load_dotenv
 
 import models
-from data import Medline
+from data import (
+    Medline,
+    get_translation_prompt_skeleton,
+    full_lang_name,
+)
 
 
+CSV_HEADER = "job_id,model,dataset,lp,chrf,comet,cometkiwi"
 load_dotenv("./environment/.env")
 WANDB_API_KEY = os.getenv("WANDB_API_KEY")
 SLURM_JOB_ID = os.getenv("SLURM_JOB_ID") or "local-" + uuid4().hex[:8]
-os.makedirs("results", exist_ok=True)
 if not os.path.exists("results.csv"):
     with open("results.csv", "w") as f:
-        f.write("job_id,model,dataset,lp,chrf,comet,cometkiwi\n")
+        f.write(f"{CSV_HEADER}\n")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
+    parser = argparse.ArgumentParser(
+        "Evaluate translation model (Comet, CometKiwi, chrF++)"
+    )
     parser.add_argument(
         "--model",
         type=str,
-        help="Identifier of model in Hugging Face database or path to pretrained weights and config."
-    ) # TODO: also accept pretrained weights
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        help="Path to dataset."
+        help="Identifier of model in Hugging Face database or path to pretrained weights and config.",
     )
+    parser.add_argument("--data_dir", type=str, help="Path to dataset.")
     parser.add_argument(
         "--split",
         type=str,
-        help="Dataset partition, must be on of {{'test', 'train'}}."
+        help="Dataset partition, must be on of {{'test', 'train'}}.",
     )
     parser.add_argument("--source_lang", type=str)
     parser.add_argument("--target_lang", type=str)
@@ -61,78 +62,108 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # TODO: load dataset (how to get correct random split?)
-    train_ds, test_ds = Medline(args.source_language, args.target_language, args.data_dir).train_test_split()
+    medline = Medline(
+        args.source_lang, args.target_lang, args.data_dir
+    )
+    train_dataset, test_dataset = medline.train_test_split()
+    print("dataset lengths:", len(train_dataset), len(test_dataset))
 
     if args.split == "test":
-        ds = test_ds
+        dataset = test_dataset
     elif args.split == "train":
-        ds = train_ds
+        dataset = train_dataset
     else:
-        raise NotImplementedError(f"Datasplit {args.split} not recognized! Must be on of {{'test', 'train'}}")
+        raise NotImplementedError(
+            f"Datasplit {args.split} not recognized! Must be on of {{'test', 'train'}}"
+        )
 
-    # metrics
-    comet = evaluate.load("comet", revision="main")
-    kiwi = evaluate.load("cometkiwi", revision="main")
+    # kiwi = evaluate.load("cometkiwi", revision="main")
     chrf = evaluate.load("chrf", revision="main")
 
-    model, tok = models.load(args.model, device, args.dtype)
+    model, tokenizer = models.load(args.model, device, args.dtype, tokenizer_padding_side="left")
+    # may induce a nice inference speed-up
+    model = torch.compile(model)
 
+    prompt_skeleton = get_translation_prompt_skeleton(
+        full_lang_name(medline.lang_from), full_lang_name(medline.lang_to)
+    )
+
+    # store prompts and target sentences
     sources, references = [], []
-    for ex in ds:
-        if "translation" in ex:
-            tr = ex["translation"]
-            sources.append(tr[args.source_lang])
-            references.append(tr[args.target_lang])
-        else:
-            sources.append(ex[args.source_lang])
-            references.append(ex[args.target_lang])
+    for source, target in dataset:  # type: ignore
+        sources.append(prompt_skeleton.format(source))
+        references.append(target)
 
-    lps = [float(x) for x in args.length_penalties.split(",")]
-
-    for lp in lps:
+    length_penalties = [float(x) for x in args.length_penalties.split(",")]
+    for length_penalty in length_penalties:
+        print(f">>> Evaluating with length penalty {length_penalty}")
         preds = []
-        for i in tqdm(range(0, len(sources), args.batch_size), desc=f"LP={lp}"):
-            batch = sources[i : i + args.batch_size]
-            enc = tok(batch, return_tensors="pt", padding=True, truncation=True).to(
-                device
+
+        for i in range(0, len(sources), args.batch_size):
+            prompts = sources[i : i + args.batch_size]
+            max_gen_len = int(max([len(s) for s in references[i : i + args.batch_size]]) * 1.3)
+
+            # TODO: do we need this? and also use during finetuning?
+            text_batch = [
+                tokenizer.apply_chat_template(
+                    [{"role": "system", "content": "You are a helpful translation assistant."}, {"role": "user", "content": prompt}],
+                    tokenize=False,
+                    add_generation_prompt=True
+                ) for prompt in prompts
+            ]
+
+            model_inputs = tokenizer(  # type: ignore
+                text_batch, return_tensors="pt", padding=True, truncation=True
+            ).to(device)
+
+            start_time = time.perf_counter()
+
+            # generate outputs
+            generated_ids = model.generate(  # type: ignore
+                model_inputs.input_ids,
+                attention_mask=model_inputs.attention_mask,
+
+                max_new_tokens=max_gen_len, # TODO: is this proper?
+                
+                # paired with torch.compile(model), this could lead to a nice speed-up
+                # cache_implementation="static",
             )
-            out = model.generate(
-                **enc,
-                num_beams=args.beam_size,
-                max_length=tok.model_max_length,
-                length_penalty=lp,
-                early_stopping=False,
-            )
-            preds.extend(tok.batch_decode(out, skip_special_tokens=True))
+
+            # cut off prompt
+            generated_ids = [
+                output_ids[len(input_ids):]
+                    for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+            ]
+
+            decoded = tokenizer.batch_decode(  # type: ignore
+                generated_ids, skip_special_tokens=True
+            )   
+
+            end_time = time.perf_counter()
+
+
+            preds.extend(decoded)  # type: ignore
+            # print decoded msg
+            # for src, pred in zip(prompts, decoded):
+            #     print(f"SRC: {src}\nPRED: {pred}\n")
+
+            print(f"!Iteration took {end_time - start_time}s!")
+            break
 
         # chrF++
         chrf_score = chrf.compute(
-            predictions=preds, references=[[r] for r in references]
-        )["score"]
+            predictions=preds, references=[[r] for r in references[:len(preds)]]
+        )["score"]  # type: ignore
 
-        # COMET
-        comet_score = comet.compute(
-            predictions=preds,
-            references=references,
-            sources=sources,
-            model=args.comet_model,
-        )["mean_score"]
-
-        # COMETKiwi
-        kiwi_score = kiwi.compute(
-            predictions=preds, sources=sources, model=args.cometkiwi_model
-        )["mean_score"]
-
-        print(
-            f"length_penalty={lp:.2f} → chrF++: {chrf_score:.3f}, COMET: {comet_score:.3f}, CometKiwi: {kiwi_score:.3f}"
-        )
+        # TODO: compute BLEU as well
+        # TODO: we're not using length penalty right now
+        print(CSV_HEADER)
+        results_str = f"{SLURM_JOB_ID},{args.model},{length_penalty},{chrf_score:.3f},{-1},{-1}"
+        print(results_str)
 
         # log to results.csv
         with open("results.csv", "a") as f:
-            f.write(
-                f"{SLURM_JOB_ID},{args.model},{lp},{chrf_score:.3f},{comet_score:.3f},{kiwi_score:.3f}\n"
-            )
+            f.write(f"{results_str}\n")
 
 
 if __name__ == "__main__":
