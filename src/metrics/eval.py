@@ -21,23 +21,23 @@ if not os.path.exists("results.csv"):
 
 
 def parse_args():
-    p = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
-    p.add_argument("--model", required=True)
-    p.add_argument("--dataset", required=True)
-    p.add_argument("--dataset_config", default=None)
-    p.add_argument("--split", default="test")
-    p.add_argument("--source_lang", required=True)
-    p.add_argument("--target_lang", required=True)
-    p.add_argument("--batch_size", type=int, default=8)
-    p.add_argument("--beam_size", type=int, default=5)
-    p.add_argument(
+    parser = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--dataset", required=True)
+    parser.add_argument("--dataset_config", default=None)
+    parser.add_argument("--split", default="test")
+    parser.add_argument("--source_lang", required=True)
+    parser.add_argument("--target_lang", required=True)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--beam_size", type=int, default=5)
+    parser.add_argument(
         "--length_penalties",
         default="0.8",
         help="comma-separated values, e.g. 0.6,0.8,1.0",
     )
-    p.add_argument("--comet_model", default="Unbabel/wmt22-comet-da")
-    p.add_argument("--cometkiwi_model", default="Unbabel/wmt22-cometkiwi-da")
-    return p.parse_args()
+    parser.add_argument("--comet_model", default="Unbabel/wmt22-comet-da")
+    parser.add_argument("--cometkiwi_model", default="Unbabel/wmt22-cometkiwi-da")
+    return parser.parse_args()
 
 
 def main():

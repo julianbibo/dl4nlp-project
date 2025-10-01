@@ -1,8 +1,8 @@
 from torch.utils.data import Dataset
 import os
 import copy
-from collections import Counter
-from typing import Tuple, Set
+from typing import Tuple
+import torch
 
 IGNORE_TOKEN = -100  # TODO: set in loss function
 
@@ -25,12 +25,8 @@ def full_lang_name(abbr: str):
     return NAMES[abbr]
 
 
-class MedDataset(Dataset):
-    """A medical dataset."""
-
-    def __init__(
-        self, lang_from: str, lang_to: str, folder: str, valid_langs: Set[str]
-    ):
+class Medline(Dataset):
+    def __init__(self, lang_from: str, lang_to: str, folder: str):
         """
         Loads biomedical dataset from the medline corpus 2022.
         Samples will be in the language specified by `lang_from`
@@ -41,11 +37,13 @@ class MedDataset(Dataset):
         follow the following convention: {file id}_{language}.txt (e.g., for file ID 120 we need files 120_en.txt and 120_pt.txt for english to/from portuguese).
         """
 
-        assert lang_from in valid_langs, (
-            f"Specified language '{lang_from}' is not valid! (must be one of {valid_langs})"
+        VALID_LANGS = {"es", "fr", "pt", "de", "it", "ru", "en"}
+
+        assert lang_from in VALID_LANGS, (
+            f"Specified language '{lang_from}' is not valid! (must be one of {VALID_LANGS})"
         )
-        assert lang_to in valid_langs, (
-            f"Specified language '{lang_to}' is not valid! (must be one of {valid_langs})"
+        assert lang_to in VALID_LANGS, (
+            f"Specified language '{lang_to}' is not valid! (must be one of {VALID_LANGS})"
         )
         assert lang_from == "en" or lang_to == "en", (
             "One of the languages must be english!"
@@ -58,16 +56,12 @@ class MedDataset(Dataset):
         self.data_dir = os.path.join(folder, f"en_{other_lang}")
 
         # load file IDs
-        ids = []
+        self.ids = []
         for file in os.listdir(self.data_dir):
-            ids.append(file.split("_")[0])
-
-        # filter entries that don't have a translation
-        self.ids = [idx for idx, count in Counter(ids).items() if count == 2]
+            self.ids.append(file.split("_")[0])
 
         self.lang_from = lang_from
         self.lang_to = lang_to
-        self.valid_langs = valid_langs
 
     def __len__(self):
         return len(self.ids)
@@ -97,24 +91,6 @@ class MedDataset(Dataset):
         return source, target
 
 
-class Medline(MedDataset):
-    """MEDLINE dataset, which consists of abstracts of biomedical papers."""
-
-    def __init__(self, lang_from, lang_to, folder):
-        VALID_LANGS = {"es", "fr", "pt", "de", "it", "ru", "en"}
-
-        super().__init__(lang_from, lang_to, folder, VALID_LANGS)
-
-
-class Matra(MedDataset):
-    """Term-to-term dictionary dataset, which consists of biomedical terms."""
-
-    def __init__(self, lang_from, lang_to, folder):
-        VALID_LANGS = {"es", "de", "nl", "fr"}
-
-        super().__init__(lang_from, lang_to, folder, VALID_LANGS)
-
-
 def get_translation_prompt_skeleton(lang_from: str, lang_to: str) -> str:
     """
     Returns a translation prompt skeleton with the source yet to be plugged in.
@@ -131,8 +107,10 @@ def collate_translations(batch, tokenizer, prompt_form: str, device):
     """
     Returns a dictionary containing input_ids, labels, and attention_mask entries
     by taking a batch of string source target pairs, formatting them into a translation prompt,
-    and tokenizing.
+    and tokenizing. 
     """
+    torch.cuda.memory._dump_snapshot("before_collate_snapshot.pickle")
+
 
     source = [prompt_form.format(s[0]) for s in batch]
     target = [s[1] for s in batch]
@@ -145,14 +123,15 @@ def collate_translations(batch, tokenizer, prompt_form: str, device):
     eos = [tokenizer.eos_token_id]
 
     source_toks = [bos + s + t + eos for s, t in zip(source_toks_raw, target_toks_raw)]
-    toks = tokenizer.pad(
-        {"input_ids": source_toks}, padding=True, return_tensors="pt"
-    ).to(device)
+    toks = tokenizer.pad({"input_ids": source_toks}, padding=True, return_tensors="pt")
+    toks = toks.to(device)
 
     # for labels, set prompt tokens to IGNORE_TOKEN as we don't want to compute loss over those
     toks["labels"] = copy.deepcopy(toks["input_ids"])
 
     for i in range(len(toks["labels"])):
         toks["labels"][i][: len(source_toks_raw[i])] = IGNORE_TOKEN
+
+    torch.cuda.memory._dump_snapshot("collate_snapshot.pickle")
 
     return toks
