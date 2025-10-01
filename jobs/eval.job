@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --nodes=1                           # node count
+#SBATCH --ntasks=1                          # total number of tasks across all nodes
+#SBATCH --cpus-per-task=1                   # cpu-cores per task (>1 if multi-threaded tasks), 4 is default
+#SBATCH --gpus=1                            # number of gpus per node
+#SBATCH --partition=gpu_h100            # partition
+#SBATCH --time=08:00:00                     # total run time limit (HH:MM:SS)
+#SBATCH --output=logs/%x/%j.log            # output file
+
+############################################################
+cd ~/dl4nlp-project  # sanity check, for snellius
+source .venv/bin/activate
+python -c "import torch; print('Torch version:', torch.__version__); print('CUDA check:', torch.cuda.is_available())"  # check torch version
+############################################################
+
+# model options:
+# qwen2-7b
+# qwen2-0.5b-instruct
+# nllb-200-distilled-600m
+
+python src/eval.py \
+  --model qwen2-1.5b \
+  --data_dir data/wmt22 \
+  --split test \
+  --source_language en \
+  --target_language de \
+  --batch_size 4 \
+  --dtype float16 \

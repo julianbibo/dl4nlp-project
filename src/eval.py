@@ -25,14 +25,24 @@ if not os.path.exists("results.csv"):
 
 def parse_args():
     parser = argparse.ArgumentParser("Evaluate translation model (Comet, CometKiwi, chrF++)")
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--dataset", required=True)
-    parser.add_argument("--data_dir", type=str, required=True)
-    parser.add_argument("--dataset_config", default=None)
-    parser.add_argument("--split", default="test")
-    parser.add_argument("--source_lang", required=True)
-    parser.add_argument("--target_lang", required=True)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument(
+        "--model",
+        type=str,
+        help="Identifier of model in Hugging Face database or path to pretrained weights and config."
+    ) # TODO: also accept pretrained weights
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        help="Path to dataset."
+    )
+    parser.add_argument(
+        "--split",
+        type=str,
+        help="Dataset partition, must be on of {{'test', 'train'}}."
+    )
+    parser.add_argument("--source_lang", type=str)
+    parser.add_argument("--target_lang", type=str)
+    parser.add_argument("--batch_size", type=int)
     parser.add_argument("--beam_size", type=int, default=5)
     parser.add_argument("--dtype", type=str, default="float16")
     parser.add_argument(
@@ -121,7 +131,7 @@ def main():
         # log to results.csv
         with open("results.csv", "a") as f:
             f.write(
-                f"{SLURM_JOB_ID},{args.model},{args.dataset},{lp},{chrf_score:.3f},{comet_score:.3f},{kiwi_score:.3f}\n"
+                f"{SLURM_JOB_ID},{args.model},{lp},{chrf_score:.3f},{comet_score:.3f},{kiwi_score:.3f}\n"
             )
 
 

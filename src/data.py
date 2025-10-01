@@ -78,13 +78,13 @@ class MedDataset(Dataset):
 
     def train_test_split(self) -> Tuple[Subset, Subset]:
         """
-        Returns a deterministic train/test split of 80%/20%.
+        Returns a deterministic train/test split of 90%/10%.
         """
 
         total_samples = len(self)
-        train_samples = int(total_samples * 0.8)
+        train_samples = int(total_samples * 0.9)
 
-        return Subset(self, list(range(train_samples))), Subset(list(range(train_samples, total_samples)))
+        return Subset(self, list(range(train_samples))), Subset(self, list(range(train_samples, total_samples)))
 
     def __len__(self):
         return len(self.ids)
