@@ -1,11 +1,12 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM
+from peft import AutoPeftModelForCausalLM
 from typing import Tuple, Union
 
 
 def load(
     # TODO: set default padding side to None
     model_name: str, device, dtype, tokenizer_padding_side="right"
-) -> Tuple[Union[AutoModelForCausalLM, AutoModelForSeq2SeqLM], AutoTokenizer]:
+) -> Tuple[Union[AutoModelForCausalLM, AutoPeftModelForCausalLM, AutoModelForSeq2SeqLM], AutoTokenizer]:
     """
     Loads a model and tokenizer.
     # Errors
@@ -14,6 +15,8 @@ def load(
 
     if "nllb" in model_name.lower():
         model_cls = AutoModelForSeq2SeqLM
+    elif "finetune" in model_name:
+        model_cls = AutoPeftModelForCausalLM
     else:
         model_cls = AutoModelForCausalLM
 

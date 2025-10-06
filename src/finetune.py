@@ -1,4 +1,5 @@
 import os
+import pickle
 from functools import partial
 from argparse import ArgumentParser
 from uuid import uuid4
@@ -122,6 +123,8 @@ def parse_args():
         default=42,
         help="Random seed for initialization.",
     )
+
+    # training params
     parser.add_argument(
         "--learn_rate", type=float, default=1e-3, help="Learning rate during training."
     )
@@ -139,6 +142,24 @@ def parse_args():
         type=str,
         default="float16",
         help="Data type for model weights (e.g., float16, bfloat16, float32).",
+    )
+    parser.add_argument(
+        "--lora_r",
+        type=int,
+        default=8,
+        help="LoRA rank.",
+    )
+    parser.add_argument(
+        "--lora_alpha",
+        type=int,
+        default=8,
+        help="LoRA alpha.",
+    )
+    parser.add_argument(
+        "--lora_dropout",
+        type=float,
+        default=0.1,
+        help="LoRA dropout.",
     )
 
     args = parser.parse_args()
@@ -177,10 +198,15 @@ if __name__ == "__main__":
     model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
-    medline = Medline(args.source_language, args.target_language, args.data_dir)
+    medline = Medline(args.source_language, args.target_language, args.data_dir)    
 
     train_dataset, test_dataset = medline.train_test_split()
     assert train_dataset and test_dataset, "Datasets may not be empty!"
+
+    # save training document IDs
+    train_inds_path = os.path.join(args.output_dir, "train_doc_ids.pkl")
+    with open(train_inds_path, "wb") as f:
+        pickle.dump(train_dataset.indices, f)
 
     print("train/test dataset lengths:", len(train_dataset), len(test_dataset))
 
@@ -188,9 +214,9 @@ if __name__ == "__main__":
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=8,
-        lora_alpha=32,
-        lora_dropout=0.1,
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
     )
     model_peft = get_peft_model(model, peft_config)  # type: ignore
 

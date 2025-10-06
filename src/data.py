@@ -3,7 +3,7 @@ import os
 import copy
 from collections import Counter
 from random import Random
-from typing import Tuple, Set
+from typing import Tuple, Set, Sequence
 
 IGNORE_TOKEN = -100  # TODO: set in loss function
 
@@ -42,7 +42,7 @@ class MedDataset(Dataset):
         follow the following convention: {file id}_{language}.txt (e.g., for file ID 120 we need files 120_en.txt and 120_pt.txt for english to/from portuguese).
         """
 
-        SHUFFLE_SEED = 391
+        SHUFFLE_SEED = 381
 
         assert lang_from in valid_langs, (
             f"Specified language '{lang_from}' is not valid! (must be one of {valid_langs})"
@@ -76,17 +76,26 @@ class MedDataset(Dataset):
         self.lang_to = lang_to
         self.valid_langs = valid_langs
 
-    def train_test_split(self) -> Tuple[Subset, Subset]:
+    def train_test_split(self, train_perc=0.9) -> Tuple[Subset, Subset]:
         """
-        Returns a deterministic train/test split of 90%/10%.
+        Returns a deterministic train/test split.
         """
 
         total_samples = len(self)
-        train_samples = int(total_samples * 0.9)
+        train_samples = int(total_samples * train_perc)
 
         return Subset(self, list(range(train_samples))), Subset(
             self, list(range(train_samples, total_samples))
         )
+
+    def select(self, doc_ids: Sequence) -> Subset:
+        """
+        Returns a subset with the selected indices. May fail if `inds` contains
+        invalid indices.
+        """
+
+        ids = [self.ids.index(idx) for idx in doc_ids]
+        return Subset(self, ids)
 
     def __len__(self):
         return len(self.ids)
@@ -172,6 +181,6 @@ def collate_translations(batch, tokenizer, prompt_form: str, device):
     toks["labels"] = copy.deepcopy(toks["input_ids"])
 
     for i in range(len(toks["labels"])):
-        toks["labels"][i][: len(source_toks_raw[i])] = IGNORE_TOKEN
+        toks["labels"][i][: len(source_toks_raw[i]) + len(bos)] = IGNORE_TOKEN
 
     return toks

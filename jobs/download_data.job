@@ -5,7 +5,7 @@
 #SBATCH --gpus=1                            # number of gpus per node
 #SBATCH --partition=gpu_mig              # partition
 #SBATCH --time=00:40:00                     # total run time limit (HH:MM:SS)
-#SBATCH --output=logs/%x/%j.log            # output file
+#SBATCH --output=logs/%x/%j_%x.log          # output file
 
 cd ~/dl4nlp-project  # sanity check, for snellius
 python -m venv .venv
