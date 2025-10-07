@@ -1,5 +1,4 @@
 import os
-import pickle
 from functools import partial
 from argparse import ArgumentParser
 from uuid import uuid4
@@ -198,15 +197,16 @@ if __name__ == "__main__":
     model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
-    medline = Medline(args.source_language, args.target_language, args.data_dir)    
+    medline = Medline(args.source_language, args.target_language, args.data_dir)
 
     train_dataset, test_dataset = medline.train_test_split()
     assert train_dataset and test_dataset, "Datasets may not be empty!"
 
     # save training document IDs
-    train_inds_path = os.path.join(args.output_dir, "train_doc_ids.pkl")
-    with open(train_inds_path, "wb") as f:
-        pickle.dump(train_dataset.indices, f)
+    # TODO MODIFY
+    train_inds_path = os.path.join(args.output_dir, "train_doc_ids.txt")
+    with open(train_inds_path, "w") as f:
+        f.write("\n".join([str(i) for i in train_dataset.indices]))
 
     print("train/test dataset lengths:", len(train_dataset), len(test_dataset))
 
@@ -223,7 +223,6 @@ if __name__ == "__main__":
     model_peft.print_trainable_parameters()
 
     # setup trainer
-    # TODO: maximize batch sizes
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         learning_rate=args.learn_rate,

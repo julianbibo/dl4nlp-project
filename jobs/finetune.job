@@ -27,7 +27,7 @@ python src/finetune.py \
   --data_dir data/wmt22 \
   --learn_rate 1e-3 \
   --epochs 1 \
-  --batch_size 4 \
+  --batch_size 8 \
   --dtype float16 \
   --seed 381 \
   --lora_r 8 \

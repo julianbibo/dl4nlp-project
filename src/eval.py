@@ -1,6 +1,5 @@
 import argparse
 import os
-import pickle
 from uuid import uuid4
 import time
 
@@ -80,9 +79,9 @@ def main():
     # load document IDs observed during train
     try:
         # TODO: the ".." is sketch
-        train_inds_path = os.path.join(args.model, "..", "train_doc_ids.pkl")
-        f = open(train_inds_path, "rb")
-        train_inds = pickle.load(f)
+        train_inds_path = os.path.join(args.model, "..", "train_doc_ids.txt")
+        f = open(train_inds_path, "r")
+        train_inds = f.read().splitlines()
 
         print(
             "Using document IDs observed during training for determining train-test split..."

@@ -4,6 +4,8 @@ logs/
 data/
 checkpoints/
 old_code/
+notebooks/temp_images/
+results old*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -33,7 +35,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-*.pickle
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

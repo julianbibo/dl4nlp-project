@@ -27,13 +27,18 @@ python -c "import torch; print('Torch version:', torch.__version__); print('CUDA
 # --model checkpoints/en_de/finetune-lr=0.001-15068132/checkpoint-2517/
 # --model checkpoints/en_de/finetune-lr=0.0001-15068135/checkpoint-2517/
 
+# LoRA r and alpha = 8, batch size = 8
+# --model checkpoints/en_fr/finetune-lr=0.001-15175332/checkpoint-1386/
+
 # checkpoints/en_de/finetune-lr\=0.001-15131437/checkpoint-2517
+# --model checkpoints/en_de/finetune-lr=0.001-15172222/checkpoint-2517 \
+
 
 python src/eval.py \
-  --model Qwen/Qwen2-1.5B-Instruct \
+  --model checkpoints/en_fr/finetune-lr=0.001-15175332/checkpoint-1386/ \
   --data_dir data/wmt22 \
   --split test \
   --source_lang en \
-  --target_lang ru \
+  --target_lang es \
   --batch_size 16 \
   --dtype float16 \

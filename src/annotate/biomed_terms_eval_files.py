@@ -144,8 +144,9 @@ def deepseek_extract_pairs_sync(client, src, tgt, src_lang, tgt_lang, retries=3,
                 model=DEEPSEEK_MODEL,
                 messages=[{"role":"system","content":SYS_PROMPT},
                           {"role":"user","content":user_prompt}],
-                stream=False, temperature=0.0,
+                stream=False, temperature=0.2,
                 response_format={"type": "json_object"},
+                max_tokens=512,
             )
             text = resp.choices[0].message.content.strip()
             pairs = _parse_pairs(text)
@@ -178,8 +179,9 @@ def make_async_caller(async_client, limiter, retries, retry_min, retry_max):
                 model=DEEPSEEK_MODEL,
                 messages=[{"role":"system","content":SYS_PROMPT},
                           {"role":"user","content":user_prompt}],
-                stream=False, temperature=0.0,
+                stream=False, temperature=0.2,
                 response_format={"type": "json_object"},
+                max_tokens=512,
             )
         text = resp.choices[0].message.content.strip()
         pairs = _parse_pairs(text)
@@ -383,7 +385,7 @@ def parse_args():
     # retries / concurrency
     p.add_argument("--retries", type=int, default=3)
     p.add_argument("--retry_sleep", type=float, default=2.0)
-    p.add_argument("--concurrency", type=int, default=8, help="Max in-flight requests")
+    p.add_argument("--concurrency", type=int, default=15, help="Max in-flight requests")
     p.add_argument("--rate_limit", type=int, default=15, help="Requests per second")
     p.add_argument("--no_async", action="store_true", help="Force synchronous mode")
 
