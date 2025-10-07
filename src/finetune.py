@@ -9,7 +9,7 @@ from transformers import TrainingArguments, Trainer, TrainerCallback
 from peft import LoraConfig, TaskType, get_peft_model
 from torch.utils.data import DataLoader
 from data import (
-    Medline,
+    load_super_train_dataset,
     collate_translations,
     get_translation_prompt_skeleton,
     full_lang_name,
@@ -17,6 +17,7 @@ from data import (
 import models
 import wandb
 from dotenv import load_dotenv
+from typing import Optional
 
 
 load_dotenv("./environment/.env")
@@ -55,29 +56,11 @@ class EncoderTrainer(Trainer):
         )
 
     def get_train_dataloader(self):
-        return DataLoader(  # TODO: use accelerator.prepare?
+        return DataLoader(
             self.train_dataset,
             batch_size=self.args.train_batch_size,
             collate_fn=self.collate_fn,
         )
-
-    def get_eval_dataloader(self, eval_dataset=None):
-        if eval_dataset is None and self.eval_dataset is None:
-            raise ValueError("Trainer: evaluation requires an eval_dataset.")
-
-        return DataLoader(
-            self.eval_dataset,  # [eval_dataset] if isinstance(eval_dataset, str) else eval_dataset,
-            batch_size=self.args.eval_batch_size,
-            collate_fn=self.collate_fn,
-        )
-
-    def get_test_dataloader(self, test_dataset):
-        return DataLoader(
-            test_dataset,
-            batch_size=self.args.eval_batch_size,
-            collate_fn=self.collate_fn,
-        )
-
 
 def parse_args():
     parser = ArgumentParser()
@@ -87,16 +70,15 @@ def parse_args():
         required=True,
     )
     parser.add_argument(
-        "-sl",
-        "--source_language",
-        type=str,
+        "--target_en",
+        type=bool,
         required=True,
+        help="Whether the target language is English. If `False`, English serves as the source language."
     )
     parser.add_argument(
-        "-tl",
-        "--target_language",
-        type=str,
-        required=True,
+        "--biomedical_lang",
+        type=Optional[str],
+        help="If set, this language is represented by biomedical data instead of general data"
     )
     parser.add_argument(
         "--checkpoint_dir",
@@ -111,10 +93,15 @@ def parse_args():
         help="Device to run the training on.",
     )
     parser.add_argument(
-        "--data_dir",
+        "--wmt24pp_data_dir",
         type=str,
         required=True,
-        help="Path to the dataset.",
+        help="Path to the wmt24++ dataset.",
+    )
+    parser.add_argument(
+        "--wmt22_data_dir",
+        type=Optional[str],
+        help="Path to the wmt22 dataset. Only necessary if biomedical_lang is set to a non-None value.",
     )
     parser.add_argument(
         "--seed",
@@ -197,18 +184,10 @@ if __name__ == "__main__":
     model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
-    medline = Medline(args.source_language, args.target_language, args.data_dir)
+    dataset = load_super_train_dataset(args.target_en, args.biomedical_lang, args.wmt24pp_data_dir, args.wmt22_data_dir)
+    assert dataset, "Train dataset may not be empty!"
 
-    train_dataset, test_dataset = medline.train_test_split()
-    assert train_dataset and test_dataset, "Datasets may not be empty!"
-
-    # save training document IDs
-    # TODO MODIFY
-    train_inds_path = os.path.join(args.output_dir, "train_doc_ids.txt")
-    with open(train_inds_path, "w") as f:
-        f.write("\n".join([str(i) for i in train_dataset.indices]))
-
-    print("train/test dataset lengths:", len(train_dataset), len(test_dataset))
+    print("train dataset length:", len(dataset))
 
     # load finetuneable model
     peft_config = LoraConfig(
@@ -239,12 +218,12 @@ if __name__ == "__main__":
         # prompt used for aiding the model to make translations
         prompt_skeleton=get_translation_prompt_skeleton(
             full_lang_name(medline.lang_from), full_lang_name(medline.lang_to)
-        ),
+        ), # TODO: this depends on the language pair of a sample 
         tokenizer=tokenizer,
         model=model_peft,
         args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=test_dataset,
+        train_dataset=dataset,
+        eval_dataset=None,
         processing_class=tokenizer,
         compute_metrics=None,
     )

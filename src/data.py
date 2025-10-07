@@ -3,7 +3,7 @@ import os
 import copy
 from collections import Counter
 from random import Random
-from typing import Tuple, Set, Sequence, Literal, List, Union, Optional
+from typing import Tuple, Set, Sequence, Literal, Optional, Any
 import json
 
 IGNORE_TOKEN = -100  # TODO: set in loss function
@@ -170,7 +170,7 @@ class GeneralTrainDataset(TranslationDataset):
 
 
 def load_super_train_dataset(
-    target_en: bool, biomedical_lang: Optional[str], wmt22_folder, wmt24pp_folder
+    target_en: bool, biomedical_lang: Optional[str], wmt24pp_folder, wmt22_folder: Optional[Any],
 ) -> ConcatDataset:
     """
     Loads a dataset containing a mix of general (`GeneralTrainDataset`) and biomedical datasets (`Medline`) used for training.
@@ -184,6 +184,9 @@ def load_super_train_dataset(
     """
 
     LANGS = { "fr", "de", "it", "ru" }
+
+    if biomedical_lang is not None:
+        assert wmt22_folder is not None, "Since `biomedical_lang` is set, `wmt22_folder` must be set too!"
 
     # * load datasets *
     datasets = []

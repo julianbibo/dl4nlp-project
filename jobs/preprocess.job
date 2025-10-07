@@ -20,7 +20,7 @@ python -c "import torch; print('Torch version:', torch.__version__); print('CUDA
 # facebook/nllb-200-distilled-600M
 # meta-llama/Llama-3.2-3B-Instruct
 
-python src/preprocess.py \
+python src/preprocess_wmt22.py \
   --source_language en \
   --target_language fr \
   --data_dir data/wmt22 \
