@@ -9,15 +9,13 @@ from transformers import TrainingArguments, Trainer, TrainerCallback
 from peft import LoraConfig, TaskType, get_peft_model
 from torch.utils.data import DataLoader
 from data import (
-    load_super_train_dataset,
+    SuperTrainDataset,
     collate_translations,
     get_translation_prompt_skeleton,
-    full_lang_name,
 )
 import models
 import wandb
 from dotenv import load_dotenv
-from typing import Optional
 
 
 load_dotenv("./environment/.env")
@@ -62,6 +60,7 @@ class EncoderTrainer(Trainer):
             collate_fn=self.collate_fn,
         )
 
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
@@ -71,14 +70,14 @@ def parse_args():
     )
     parser.add_argument(
         "--target_en",
-        type=bool,
-        required=True,
-        help="Whether the target language is English. If `False`, English serves as the source language."
+        action="store_true",
+        help="Whether the target language is English. If `False`, English serves as the source language.",
     )
     parser.add_argument(
         "--biomedical_lang",
-        type=Optional[str],
-        help="If set, this language is represented by biomedical data instead of general data"
+        type=str,
+        default=None,
+        help="If set, this language is represented by biomedical data instead of general data",
     )
     parser.add_argument(
         "--checkpoint_dir",
@@ -100,7 +99,8 @@ def parse_args():
     )
     parser.add_argument(
         "--wmt22_data_dir",
-        type=Optional[str],
+        type=str,
+        default=None,
         help="Path to the wmt22 dataset. Only necessary if biomedical_lang is set to a non-None value.",
     )
     parser.add_argument(
@@ -150,10 +150,18 @@ def parse_args():
 
     args = parser.parse_args()
 
-    run_name = f"{args.source_language}_{args.target_language}"
-    # TODO: incorporate model name
+    if args.biomedical_lang is None:
+        run_name = "baseline"
+    else:
+        run_name = f"domain={args.biomedical_lang}"
+
+    if args.target_en:
+        run_name += "_en=target"
+    else:
+        run_name += "_en=source"
+
     args.output_dir = os.path.join(
-        args.checkpoint_dir, run_name, f"finetune-lr={args.learn_rate}-{SLURM_JOB_ID}"
+        args.checkpoint_dir, run_name, f"finetune_{SLURM_JOB_ID}"
     )
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -175,7 +183,6 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    print("Args:", args)
 
     # set seed
     torch.manual_seed(args.seed)
@@ -184,7 +191,9 @@ if __name__ == "__main__":
     model, tokenizer = models.load(args.model, args.device, args.dtype)
 
     # load data
-    dataset = load_super_train_dataset(args.target_en, args.biomedical_lang, args.wmt24pp_data_dir, args.wmt22_data_dir)
+    dataset = SuperTrainDataset(
+        args.target_en, args.biomedical_lang, args.wmt24pp_data_dir, args.wmt22_data_dir
+    )
     assert dataset, "Train dataset may not be empty!"
 
     print("train dataset length:", len(dataset))
@@ -209,16 +218,15 @@ if __name__ == "__main__":
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         weight_decay=0.01,
-        eval_strategy="epoch",
-        save_strategy="epoch",
+        # we manually save at the end
+        save_strategy="no",
+        eval_strategy="no",
         load_best_model_at_end=True,
     )
 
     trainer = EncoderTrainer(
         # prompt used for aiding the model to make translations
-        prompt_skeleton=get_translation_prompt_skeleton(
-            full_lang_name(medline.lang_from), full_lang_name(medline.lang_to)
-        ), # TODO: this depends on the language pair of a sample 
+        prompt_skeleton=get_translation_prompt_skeleton(),
         tokenizer=tokenizer,
         model=model_peft,
         args=training_args,
@@ -256,3 +264,4 @@ if __name__ == "__main__":
 
     # train
     trainer.train()
+    trainer.save_model()

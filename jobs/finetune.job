@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1                   # cpu-cores per task (>1 if multi-threaded tasks), 4 is default
 #SBATCH --gpus=1                            # number of gpus per node
 #SBATCH --partition=gpu_h100            # partition
-#SBATCH --time=08:00:00                     # total run time limit (HH:MM:SS)
+#SBATCH --time=00:10:00                     # total run time limit (HH:MM:SS)
 #SBATCH --output=logs/%x/%j_%x.log  # output file
 
 ############################################################
@@ -22,9 +22,8 @@ python -c "import torch; print('Torch version:', torch.__version__); print('CUDA
 
 python src/finetune.py \
   --model Qwen/Qwen2-1.5B-Instruct \
-  --source_language en \
-  --target_language ru \
-  --data_dir data/wmt22 \
+  --wmt22_data_dir data/wmt22 \
+  --wmt24pp_data_dir data/wmt24pp \
   --learn_rate 1e-3 \
   --epochs 1 \
   --batch_size 8 \
@@ -32,4 +31,6 @@ python src/finetune.py \
   --seed 381 \
   --lora_r 8 \
   --lora_alpha 8 \
-  --lora_dropout 0.1
+  --lora_dropout 0.1 \
+  --target_en \
+  --biomedical_lang "it" \

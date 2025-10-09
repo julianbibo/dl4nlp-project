@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1                   # cpu-cores per task (>1 if multi-threaded tasks), 4 is default
 #SBATCH --gpus=1                            # number of gpus per node
 #SBATCH --partition=gpu_a100	            # partition
-#SBATCH --time=00:30:00                     # total run time limit (HH:MM:SS)
+#SBATCH --time=00:10:00                     # total run time limit (HH:MM:SS)
 #SBATCH --output=logs/%x/%j_%x.log          # output file
 
 ############################################################
@@ -33,12 +33,15 @@ python -c "import torch; print('Torch version:', torch.__version__); print('CUDA
 # checkpoints/en_de/finetune-lr\=0.001-15131437/checkpoint-2517
 # --model checkpoints/en_de/finetune-lr=0.001-15172222/checkpoint-2517 \
 
+# Results after super dataset:
+# Learning rate 0.001:
 
 python src/eval.py \
-  --model checkpoints/en_fr/finetune-lr=0.001-15175332/checkpoint-1386/ \
+  --model checkpoints/domain\=de_en\=target/finetune_15204246 \
   --data_dir data/wmt22 \
   --split test \
-  --source_lang en \
-  --target_lang es \
+  --source_lang it \
+  --target_lang en \
   --batch_size 16 \
   --dtype float16 \
+  --annotations_jsonl src/annotate/annotations_en_it.jsonl \
