@@ -1,6 +1,6 @@
 # Multilingual Domain-specific Finetuning
 
-This is the repository for our paper "Multilingual Domain-specific Finetuning" (Stan Fris, Fabian Westerbeek, Morris de Haan, Julian Bibo, Quinten van Engelen).
+This is the repository for our paper "Adequacy or Fluency: Domain-Specific Knowledge Transfer in Multilingual Machine Translation" (Stan Fris, Fabian Westerbeek, Morris de Haan, Julian Bibo, Quinten van Engelen).
 
 ## Abstract
 
