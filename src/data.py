@@ -266,8 +266,10 @@ class SuperTrainDataset(Dataset):
 class MatraEvalDataset(TranslationDataset):
     """Term-to-term dictionary dataset used for evaluation, which consists of biomedical terms."""
 
-    def __init__(self, lang_from, lang_to, folder):
-        VALID_LANGS = {"es", "de", "nl", "fr"}
+    def __init__(self, lang_from, lang_to, folder, split="eval"):
+        VALID_LANGS = { "es", "de", "nl", "fr", "en" }
+
+        assert split == "eval" or split is None, "Split must be eval or None!"
 
         # split is None, since we're only using this dataset for evaluation
         super().__init__(lang_from, lang_to, folder, VALID_LANGS, split=None)

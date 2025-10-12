@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 
 import models
 from data import (
+    MatraEvalDataset,
     Medline,
     get_translation_prompt_skeleton,
     full_lang_name,
@@ -40,8 +41,8 @@ def parse_args():
     parser.add_argument(
         "--split",
         type=str,
-        help="Dataset partition: {'test', 'train'}.",
-        choices=["test", "train"],
+        help="Dataset partition: {'eval', 'train'}.",
+        choices=["eval", "train"],
     )
     parser.add_argument("--source_lang", type=str)
     parser.add_argument("--target_lang", type=str)
@@ -92,6 +93,16 @@ def _exact_match_terms(tgt_terms, pred_sent):
     return hit, len(tgt_terms)
 
 
+def _print_term_diagnostics(tgt_terms, pred_sent):
+    pred_norm = _normalize_for_match(pred_sent or "")
+    print("[TERMS]", tgt_terms)
+    print("[PRED ]", pred_sent)
+    for t in tgt_terms:
+        found = _normalize_for_match(t) in pred_norm
+        print(f"  - {'OK  ' if found else 'MISS'}: {t}")
+    print()
+
+
 def main():
     MAX_TEST_SAMPLES = 128
 
@@ -101,44 +112,33 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device {device}...")
-
-    medline = Medline(args.source_lang, args.target_lang, args.data_dir, split="eval")
-
-    if args.split not in ["train", "test"]:
-        raise ValueError(
-            f"Datasplit {args.split} not recognized! Must be on of {{'test', 'train'}}"
+    
+    if "mantra" in args.data_dir:
+        dataset = MatraEvalDataset(
+            args.source_lang, args.target_lang, args.data_dir, split=args.split
         )
+        system_prompt = "You are a translation assistant only literally translates phrases."
 
-    # derive split
-    try:
-        train_inds_path = os.path.join(args.model, "..", "train_doc_ids.txt")
-        f = open(train_inds_path, "r")
-        train_inds = f.read().splitlines()
+        print("Using Mantra eval dataset")
+    else:
+        dataset = Medline(
+            args.source_lang, args.target_lang, args.data_dir, split="eval"
+        )
+        system_prompt = "You are a helpful translation assistant."
 
-        print("Using observed train doc IDs for split...")
-
-        if args.split == "test":
-            indices = [idx for idx in medline.ids if idx not in train_inds]
-            dataset = medline.select(indices)
-        elif args.split == "train":
-            indices = [idx for idx in medline.ids if idx in train_inds]
-            dataset = medline.select(indices)
-    except FileNotFoundError:
-        print("Doc IDs not found; using default split...")
-
-        if args.split == "test":
-            _, dataset = medline.train_test_split()
-        elif args.split == "train":
-            dataset, _ = medline.train_test_split()
+        print("Evaluating on MEDLINE dataset")
 
     # annotations -> idx -> list of target terms
     abstract_id_to_terms = None
     if args.annotations_jsonl:
-        anns = _read_jsonl(args.annotations_jsonl)
-        abstract_id_to_terms = {
-            rec["pair_id"]: [p["tgt"]["text"] for p in rec.get("term_pairs", [])]
-            for rec in anns
-        }
+        try:
+            anns = _read_jsonl(args.annotations_jsonl)
+            abstract_id_to_terms = {
+                rec["pair_id"]: [p["tgt"]["text"] for p in rec.get("term_pairs", [])]
+                for rec in anns
+            }
+        except FileNotFoundError:
+            pass        
 
     # align IDs with dataset order
     # item_ids = list(getattr(dataset, "doc_id"))  # @morris im not sure NOTE: does not work, pls delete
@@ -159,7 +159,10 @@ def main():
 
     # prompts + refs
     sources, references, doc_ids = [], [], []
-    for batch in dataset:  # type: ignore
+    for i, batch in enumerate(dataset):  # type: ignore
+        if i >= MAX_TEST_SAMPLES:
+            break
+
         sources.append(
             prompt_skeleton.format(
                 lang_from=full_lang_name(batch["lang_from"]),
@@ -173,10 +176,10 @@ def main():
     length_penalties = [float(x) for x in args.length_penalties.split(",")]
 
     for length_penalty in length_penalties:
-        print(">>> Evaluating...")
         preds = []
 
-        n_samples = min(MAX_TEST_SAMPLES, len(sources))
+        n_samples = len(sources)
+        print(f">>> Evaluating {n_samples} samples")
         for i in tqdm(range(0, n_samples, args.batch_size)):
             prompts = sources[i : i + args.batch_size]
             max_gen_len = int(
@@ -191,7 +194,7 @@ def main():
                     [
                         {
                             "role": "system",
-                            "content": "You are a helpful translation assistant.",
+                            "content": system_prompt,
                         },
                         {"role": "user", "content": prompt},
                     ],
@@ -230,8 +233,9 @@ def main():
 
             print(f"!Iteration took {end_time - start_time}s!")
 
-        assert len(preds) == len(references), f"Preds length: {len(preds)}, References length: {len(references)}"
-        
+        assert len(preds) == len(references), (
+            f"Preds length: {len(preds)}, References length: {len(references)}"
+        )
 
         # exact term EM (micro)
         if abstract_id_to_terms is None:
@@ -247,6 +251,7 @@ def main():
 
                 tgt_terms = abstract_id_to_terms[doc_id]
                 h, t = _exact_match_terms(tgt_terms, pred)
+                _print_term_diagnostics(tgt_terms, pred)
                 total_hit += h
                 total_terms += t
             term_em_micro = (total_hit / total_terms) if total_terms else 0.0

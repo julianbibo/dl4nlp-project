@@ -8,7 +8,6 @@
 #SBATCH --output=logs/%x/%j_%x.log  # output file
 
 ############################################################
-cd ~/dl4nlp-project  # sanity check, for snellius
 source .venv/bin/activate
 python -c "import torch; print('Torch version:', torch.__version__); print('CUDA check:', torch.cuda.is_available())"  # check torch version
 ############################################################

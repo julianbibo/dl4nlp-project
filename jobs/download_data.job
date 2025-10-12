@@ -7,15 +7,13 @@
 #SBATCH --time=00:40:00                     # total run time limit (HH:MM:SS)
 #SBATCH --output=logs/%x/%j_%x.log          # output file
 
-cd ~/dl4nlp-project  # sanity check, for snellius
 python -m venv .venv
 source .venv/bin/activate
+############################################################
+
 cd data
 pip install mtdata==0.4.0
 
 for ri in wmt23-{enzh,zhen,ende,deen,enhe,heen,enja,jaen,enru,ruen,encs,csuk,enuk,uken}; do
   mtdata get-recipe -ri $ri -o $ri -j 9 --n-jobs 9
 done
-############################################################
-
-# python src/xyz.py

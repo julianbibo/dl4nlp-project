@@ -8,7 +8,6 @@
 #SBATCH --output=logs/%x/%j_%x.log  # output file
 
 ############################################################
-cd ~/dl4nlp-project
 source .venv/bin/activate
 python -c "import torch, sys; print('Python version:', sys.version); print('PyTorch version:', torch.__version__); print('CUDA check:', torch.cuda.is_available())"
 ############################################################
