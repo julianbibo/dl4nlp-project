@@ -1,0 +1,18 @@
+job_id + comment               , model OR finetuned checkpoint                    , dataset   , source, target, lp , chrf  , comet, bleu  , exact
+15203980 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, en    , es    , 0.8, 30.133, 0.660,  3.325, -1
+15204062 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, de    , en    , 0.8, 46.238, 0.790, 13.875, -1
+15204064 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, es    , en    , 0.8, 56.409, 0.815, 23.405, -1
+15204066 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, en    , de    , 0.8, 25.273, 0.547,  2.098, -1
+15204063 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, fr    , en    , 0.8, 49.962, 0.811, 19.426, -1
+15204140 (short language names), checkpoints/baseline_en=target/finetune_15204117 , data/wmt22, de    , en    , 0.8, 48.949, 0.799, 15.343, -1
+15204143 (short language names), checkpoints/baseline_en=target/finetune_15204117 , data/wmt22, fr    , en    , 0.8, 55.277, 0.826, 22.646, -1
+15204141 (short language names), checkpoints/baseline_en=target/finetune_15204117 , data/wmt22, it    , en    , 0.8, 52.679, 0.808, 19.334, -1
+15204273 (duplicate)           , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, de    , en    , 0.8, 50.347, 0.798, 16.832, -1
+15204287                       , checkpoints/baseline_en=target/finetune_15204243 , data/wmt22, it    , en    , 0.8, 50.493, 0.801, 17.361, -1
+15204310                       , checkpoints/baseline_en=target/finetune_15204243 , data/wmt22, de    , en    , 0.8, 47.070, 0.792, 13.890, -1
+15204321                       , checkpoints/baseline_en=target/finetune_15204243 , data/wmt22, fr    , en    , 0.8, 53.585, 0.825, 21.186, -1
+15204336                       , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, de    , en    , 0.8, 50.895, 0.792, 17.216, -1
+15204340                       , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, it    , en    , 0.8, 51.359, 0.793, 18.194, -1
+15204330                       , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, fr    , en    , 0.8, 53.902, 0.813, 22.050, -1
+15223071,checkpoints/domain=de_en=target/finetune_15204246,data/wmt22,it,en,0.8,54.054,0.800,24.446,0.000
+15223650,checkpoints/domain=de_en=target/finetune_15204246,data/wmt22,it,en,0.8,53.009,0.792,23.582,0.096

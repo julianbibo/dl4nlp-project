@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH --nodes=1                           # node count
+#SBATCH --ntasks=1                          # total number of tasks across all nodes
+#SBATCH --cpus-per-task=1                   # cpu-cores per task (>1 if multi-threaded tasks), 4 is default
+#SBATCH --gpus=1                            # number of gpus per node
+#SBATCH --partition=gpu_a100            # partition
+#SBATCH --time=00:10:00                     # total run time limit (HH:MM:SS)
+#SBATCH --output=logs/%x/%j_%x.log  # output file
+
+############################################################
+source .venv/bin/activate
+python -c "import torch; print('Torch version:', torch.__version__); print('CUDA check:', torch.cuda.is_available())"  # check torch version
+############################################################
+
+# $1 is short language
+# $2 is long language name
+
+SHORT=$1
+LONG=$2
+
+if [ -z "$SHORT" ] || [ -z "$LONG" ]; then
+  echo "Error: Please provide both short and long language names as arguments."
+  echo "Usage: sbatch biomed_terms.job <short_lang> <long_lang>"
+  exit 1
+fi
+    
+python src/annotate/biomed_terms_eval_files.py \
+    --corpus_file data/wmt22/en_${SHORT}_eval_ids.txt \
+    --data_dir data/wmt22/en_${SHORT} \
+    --src en --tgt ${SHORT} \
+    --tgt_lang ${LONG^} \
+    --out_annotations annotations_en_${SHORT}.jsonl \
+    --concurrency 8 --rate_limit 15

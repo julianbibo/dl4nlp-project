@@ -1,4 +1,11 @@
 *.pdf
+wandb/
+logs/
+data/
+checkpoints/
+old_code/
+notebooks/temp_images/
+results old*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
