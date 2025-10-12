@@ -1,18 +1,81 @@
-job_id + comment               , model OR finetuned checkpoint                    , dataset   , source, target, lp , chrf  , comet, bleu  , exact
-15203980 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, en    , es    , 0.8, 30.133, 0.660,  3.325, -1
-15204062 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, de    , en    , 0.8, 46.238, 0.790, 13.875, -1
-15204064 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, es    , en    , 0.8, 56.409, 0.815, 23.405, -1
-15204066 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, en    , de    , 0.8, 25.273, 0.547,  2.098, -1
-15204063 (short language names), checkpoints/domain=de_en=target/finetune_15203674, data/wmt22, fr    , en    , 0.8, 49.962, 0.811, 19.426, -1
-15204140 (short language names), checkpoints/baseline_en=target/finetune_15204117 , data/wmt22, de    , en    , 0.8, 48.949, 0.799, 15.343, -1
-15204143 (short language names), checkpoints/baseline_en=target/finetune_15204117 , data/wmt22, fr    , en    , 0.8, 55.277, 0.826, 22.646, -1
-15204141 (short language names), checkpoints/baseline_en=target/finetune_15204117 , data/wmt22, it    , en    , 0.8, 52.679, 0.808, 19.334, -1
-15204273 (duplicate)           , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, de    , en    , 0.8, 50.347, 0.798, 16.832, -1
-15204287                       , checkpoints/baseline_en=target/finetune_15204243 , data/wmt22, it    , en    , 0.8, 50.493, 0.801, 17.361, -1
-15204310                       , checkpoints/baseline_en=target/finetune_15204243 , data/wmt22, de    , en    , 0.8, 47.070, 0.792, 13.890, -1
-15204321                       , checkpoints/baseline_en=target/finetune_15204243 , data/wmt22, fr    , en    , 0.8, 53.585, 0.825, 21.186, -1
-15204336                       , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, de    , en    , 0.8, 50.895, 0.792, 17.216, -1
-15204340                       , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, it    , en    , 0.8, 51.359, 0.793, 18.194, -1
-15204330                       , checkpoints/domain=de_en=target/finetune_15204246, data/wmt22, fr    , en    , 0.8, 53.902, 0.813, 22.050, -1
-15223071,checkpoints/domain=de_en=target/finetune_15204246,data/wmt22,it,en,0.8,54.054,0.800,24.446,0.000
-15223650,checkpoints/domain=de_en=target/finetune_15204246,data/wmt22,it,en,0.8,53.009,0.792,23.582,0.096
+jobid comment (() means unused)   , model OR finetuned checkpoint                     , dataset              , source, target, lp , chrf  , comet, bleu  , exact
+15204273 (duplicate)              , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , de    , en    , 0.8, 50.347, 0.798, 16.832, -1
+15204340 (duplicate)              , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , it    , en    , 0.8, 51.359, 0.793, 18.194, -1
+15223071 (duplicate)              , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , it    , en    , 0.8, 54.054, 0.800, 24.446, 0.000
+15204287 (no ETM)                 , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , it    , en    , 0.8, 50.493, 0.801, 17.361, -1
+15204310 (no ETM)                 , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , de    , en    , 0.8, 47.070, 0.792, 13.890, -1
+15204321 (no ETM)                 , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , fr    , en    , 0.8, 53.585, 0.825, 21.186, -1
+15204336 (no ETM)                 , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , de    , en    , 0.8, 50.895, 0.792, 17.216, -1
+15204330 (no ETM)                 , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , fr    , en    , 0.8, 53.902, 0.813, 22.050, -1
+15225741 FT: gen; EVAL: de        , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , de    , en    , 0.8, 46.211, 0.791, 14.364, 0.110
+15225748 FT: gen; EVAL: fr        , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , fr    , en    , 0.8, 55.114, 0.825, 22.092, 0.078
+15225739 FT: gen; EVAL: it        , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , it    , en    , 0.8, 48.687, 0.795, 16.798, 0.103
+15224925 FT: gen; EVAL: ru        , checkpoints/baseline_en=target/finetune_15204243  , data/wmt22           , ru    , en    , 0.8, 49.624, 0.779, 15.629, 0.031
+15225752 FT: gen&med=de; EVAL: de , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , de    , en    , 0.8, 49.198, 0.788, 17.042, 0.105
+15225753 FT: gen&med=de; EVAL: fr , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , fr    , en    , 0.8, 56.089, 0.820, 23.813, 0.074
+15223650 FT: gen&med=de; EVAL: it , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , it    , en    , 0.8, 53.009, 0.792, 23.582, 0.096
+15225319 FT: gen&med=de; EVAL: ru , checkpoints/domain=de_en=target/finetune_15204246 , data/wmt22           , ru    , en    , 0.8, 51.897, 0.784, 17.086, 0.033
+15225561 FT: gen&med=fr; EVAL: de , checkpoints/domain=fr_en=target/finetune_15204259 , data/wmt22           , de    , en    , 0.8, 50.171, 0.792, 16.812, 0.113
+15225562 FT: gen&med=fr; EVAL: fr , checkpoints/domain=fr_en=target/finetune_15204259 , data/wmt22           , fr    , en    , 0.8, 57.804, 0.823, 24.605, 0.088
+15225564 FT: gen&med=fr; EVAL: it , checkpoints/domain=fr_en=target/finetune_15204259 , data/wmt22           , it    , en    , 0.8, 52.007, 0.792, 18.568, 0.114
+15225565 FT: gen&med=fr; EVAL: ru , checkpoints/domain=fr_en=target/finetune_15204259 , data/wmt22           , ru    , en    , 0.8, 52.569, 0.783, 17.087, 0.031
+15225576 FT: gen&med=it; EVAL: de , checkpoints/domain=it_en=target/finetune_15204260 , data/wmt22           , de    , en    , 0.8, 47.428, 0.798, 13.810, 0.098
+15225575 FT: gen&med=it; EVAL: fr , checkpoints/domain=it_en=target/finetune_15204260 , data/wmt22           , fr    , en    , 0.8, 54.181, 0.819, 21.714, 0.068
+15225572 FT: gen&med=it; EVAL: it , checkpoints/domain=it_en=target/finetune_15204260 , data/wmt22           , it    , en    , 0.8, 46.478, 0.781, 14.147, 0.093
+15225571 FT: gen&med=it; EVAL: ru , checkpoints/domain=it_en=target/finetune_15204260 , data/wmt22           , ru    , en    , 0.8, 48.770, 0.782, 14.226, 0.021
+15225586 FT: gen&med=ru; EVAL: de , checkpoints/domain=ru_en=target/finetune_15224809 , data/wmt22           , de    , en    , 0.8, 49.356, 0.795, 16.031, 0.114
+15225590 FT: gen&med=ru; EVAL: fr , checkpoints/domain=ru_en=target/finetune_15224809 , data/wmt22           , fr    , en    , 0.8, 58.331, 0.835, 26.041, 0.083
+15225588 FT: gen&med=ru; EVAL: it , checkpoints/domain=ru_en=target/finetune_15224809 , data/wmt22           , it    , en    , 0.8, 51.337, 0.797, 18.467, 0.105
+15225589 FT: gen&med=ru; EVAL: ru , checkpoints/domain=ru_en=target/finetune_15224809 , data/wmt22           , ru    , en    , 0.8, 50.902, 0.784, 16.638, 0.024
+15236243 (wrong target)           , checkpoints/baseline_en=source/finetune_15225890  , data/wmt22           , it    , en    , 0.8, 29.699, 0.642,  2.742, 0.410
+15236247 (wrong target)           , checkpoints/baseline_en=source/finetune_15225890  , data/wmt22           , ru    , en    , 0.8,  1.423, 0.575,  1.837, 0.551
+15236242 (wrong target)           , checkpoints/baseline_en=source/finetune_15225890  , data/wmt22           , fr    , en    , 0.8, 30.521, 0.680,  2.928, 0.529
+15236235 (wrong target)           , checkpoints/baseline_en=source/finetune_15225890  , data/wmt22           , de    , en    , 0.8, 25.419, 0.599,  2.370, 0.458
+15226016                          , checkpoints/domain=de_en=source/finetune_15225977/, data/wmt22           , en    , it    , 0.8, 45.708, 0.726, 11.241, 0.198
+15226015                          , checkpoints/domain=de_en=source/finetune_15225977/, data/wmt22           , en    , ru    , 0.8, 44.311, 0.789, 10.502, 0.158
+15226014                          , checkpoints/domain=de_en=source/finetune_15225977/, data/wmt22           , en    , fr    , 0.8, 49.162, 0.786, 16.288, 0.259
+15226012                          , checkpoints/domain=de_en=source/finetune_15225977/, data/wmt22           , en    , de    , 0.8, 41.107, 0.637,  8.111, 0.189
+15225985                          , checkpoints/domain=fr_en=source/finetune_15225902/, data/wmt22           , en    , it    , 0.8, 50.446, 0.759, 13.978, 0.224
+15225982                          , checkpoints/domain=fr_en=source/finetune_15225902/, data/wmt22           , en    , fr    , 0.8, 54.762, 0.804, 20.750, 0.282
+15225983                          , checkpoints/domain=fr_en=source/finetune_15225902/, data/wmt22           , en    , de    , 0.8, 45.698, 0.690, 10.109, 0.212
+15225984                          , checkpoints/domain=fr_en=source/finetune_15225902/, data/wmt22           , en    , ru    , 0.8, 45.594, 0.795, 12.035, 0.172
+15225994                          , checkpoints/domain=it_en=source/finetune_15225901/, data/wmt22           , en    , fr    , 0.8, 51.497, 0.780, 17.906, 0.259
+15225991                          , checkpoints/domain=it_en=source/finetune_15225901/, data/wmt22           , en    , it    , 0.8, 45.865, 0.721, 11.012, 0.181
+15226005                          , checkpoints/domain=ru_en=source/finetune_15225891/, data/wmt22           , en    , de    , 0.8, 44.567, 0.682, 10.259, 0.236
+15226001                          , checkpoints/domain=ru_en=source/finetune_15225891/, data/wmt22           , en    , fr    , 0.8, 50.961, 0.779, 17.782, 0.281
+15226004                          , checkpoints/domain=ru_en=source/finetune_15225891/, data/wmt22           , en    , it    , 0.8, 45.436, 0.721, 11.956, 0.208
+15236587                          , checkpoints/baseline_en=source/finetune_15225890  , data/mantra_converted, en    , de    , 0.8, 35.986, 0.666,  1.311, 0.000
+15235009                          , Qwen/Qwen2-1.5B-Instruct                          , data/wmt22           , it    , en    , 0.8, 59.582, 0.822, 26.970, 0.133
+15235008                          , Qwen/Qwen2-1.5B-Instruct                          , data/wmt22           , ru    , en    , 0.8, 48.041, 0.764, 22.338, 0.202
+15235007                          , Qwen/Qwen2-1.5B-Instruct                          , data/wmt22           , fr    , en    , 0.8, 59.135, 0.810, 26.282, 0.275
+15235006                          , Qwen/Qwen2-1.5B-Instruct                          , data/wmt22           , de    , en    , 0.8, 58.822, 0.822, 25.493, 0.142
+15238759                          , checkpoints/baseline_en=target/finetune_15204243  , data/mantra_converted, fr    , en    , 0.8, 39.889, 0.683,  2.449, 0.000
+15238758                          , checkpoints/baseline_en=target/finetune_15204243  , data/mantra_converted, de    , en    , 0.8, 41.002, 0.699,  3.978, 0.000
+15239146                          , checkpoints/domain=de_en=target/finetune_15204246 , data/mantra_converted, de    , en    , 0.8, 32.014, 0.646,  0.623, 0.000
+15239148                          , checkpoints/domain=fr_en=target/finetune_15204259 , data/mantra_converted, de    , en    , 0.8, 38.493, 0.685,  1.814, 0.000
+15239149                          , checkpoints/domain=fr_en=target/finetune_15204259 , data/mantra_converted, fr    , en    , 0.8, 41.415, 0.698,  4.412, 0.000
+15238775                          , checkpoints/domain=ru_en=target/finetune_15224809 , data/mantra_converted, de    , en    , 0.8, 37.292, 0.685,  2.747, 0.000
+15238776                          , checkpoints/domain=ru_en=target/finetune_15224809 , data/mantra_converted, fr    , en    , 0.8, 41.206, 0.698,  5.033, 0.000
+15238772                          , checkpoints/domain=it_en=target/finetune_15204260 , data/mantra_converted, fr    , en    , 0.8, 44.194, 0.710,  4.351, 0.000
+15239150                          , checkpoints/domain=it_en=target/finetune_15204260 , data/mantra_converted, de    , en    , 0.8, 39.818, 0.697,  3.552, 0.000
+15239132                          , checkpoints/baseline_en=source/finetune_15225890  , data/mantra_converted, en    , de    , 0.8, 33.123, 0.668,  0.547, 0.000
+15239140                          , checkpoints/domain=de_en=source/finetune_15225977 , data/mantra_converted, en    , fr    , 0.8, 44.715, 0.667,  2.567, 0.000
+15239142                          , checkpoints/domain=fr_en=source/finetune_15225902 , data/mantra_converted, en    , fr    , 0.8, 45.824, 0.669,  2.274, 0.000
+15238754                          , checkpoints/domain=ru_en=source/finetune_15225891 , data/mantra_converted, en    , fr    , 0.8, 16.450, 0.496,  0.381, 0.000
+15239145                          , checkpoints/domain=ru_en=source/finetune_15225891 , data/mantra_converted, en    , de    , 0.8, 22.325, 0.524,  0.228, 0.000
+15239143                          , checkpoints/domain=it_en=source/finetune_15225901 , data/mantra_converted, en    , de    , 0.8, 17.961, 0.574,  0.473, 0.000
+15239144                          , checkpoints/domain=it_en=source/finetune_15225901 , data/mantra_converted, en    , fr    , 0.8, 24.216, 0.581,  1.052, 0.000
+15239153 (wrong eval s & t)       , checkpoints/domain=ru_en=source/finetune_15225891 , data/wmt22           , ru    , en    , 0.8, 17.722, 0.649,  7.384, 0.357
+15239152 (wrong eval s & t)       , checkpoints/domain=it_en=source/finetune_15225901 , data/wmt22           , ru    , en    , 0.8,  1.467, 0.573,  1.404, 0.472
+15239151 (wrong eval s & t)       , checkpoints/domain=it_en=source/finetune_15225901 , data/wmt22           , de    , en    , 0.8, 26.005, 0.577,  2.181, 0.360
+15244850 fixed s & t              , checkpoints/domain=ru_en=source/finetune_15225891 , data/wmt22           , en    , ru    , 0.8, 46.066, 0.781, 11.561, 0.164
+15244849 fixed s & t              , checkpoints/domain=it_en=source/finetune_15225901 , data/wmt22           , en    , ru    , 0.8, 43.346, 0.777, 10.653, 0.159
+15244848 fixed s & t              , checkpoints/domain=it_en=source/finetune_15225901 , data/wmt22           , en    , de    , 0.8, 44.086, 0.671,  9.748, 0.219
+15247366 added missing            , checkpoints/baseline_en=source/finetune_15225890  , data/mantra_converted, en    , fr    , 0.8, 43.075, 0.682,  2.287, 0.000
+15247405 added missing            , checkpoints/domain=de_en=source/finetune_15225977 , data/mantra_converted, en    , de    , 0.8, 32.072, 0.667,  0.984, 0.000
+15247417 added missing            , checkpoints/domain=fr_en=source/finetune_15225902 , data/mantra_converted, en    , de    , 0.8, 33.353, 0.652,  0.514, 0.000
+15247423 added missing            , checkpoints/domain=de_en=target/finetune_15204246 , data/mantra_converted, fr    , en    , 0.8, 33.740, 0.655,  0.753, 0.000
+15257219 fixed source/target mixup, checkpoints/baseline_en=source/finetune_15225890  , data/wmt22/          , en    , it    , 0.8, 40.857, 0.713,  8.638, 0.182
+15257220 fixed source/target mixup, checkpoints/baseline_en=source/finetune_15225890  , data/wmt22/          , en    , fr    , 0.8, 47.399, 0.775, 15.264, 0.259
+15257224 fixed source/target mixup, checkpoints/baseline_en=source/finetune_15225890  , data/wmt22/          , en    , de    , 0.8, 38.908, 0.667,  7.557, 0.202
+15257236 fixed source/target mixup, checkpoints/baseline_en=source/finetune_15225890  , data/wmt22/          , en    , ru    , 0.8, 41.235, 0.789,  9.454, 0.150
