@@ -26,7 +26,7 @@ pip install -r requirements.txt
 cp environment/.env.example environment/.env
 ```
 
-4. Download the WMT22, WMT24++ and Mantra datasets and place them in the `data/` directory, and preprocess if necessary.
+4. Download the [Mantra](https://huggingface.co/datasets/bigbio/mantra_gsc), [WMT24++](https://arxiv.org/abs/2502.12404v1), and [WMT22](https://github.com/biomedical-translation-corpora/corpora?tab=readme-ov-file) datasets and place them in the `data/` directory, and preprocess if necessary.
 
 
 ## Usage
