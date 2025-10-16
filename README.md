@@ -2,6 +2,8 @@
 
 This is the repository for our paper "Adequacy or Fluency: Domain-Specific Knowledge Transfer in Multilingual Machine Translation" (Stan Fris, Fabian Westerbeek, Morris de Haan, Julian Bibo, Quinten van Engelen).
 
+Link to paper: [paper.pdf](./paper.pdf)
+
 ## Abstract
 
 This repository contains the code for our study on domain-specific fine-tuning of Multilingual Neural Machine Translation (MNMT) models. We fine-tune Qwen2-1.5B-Instruct on biomedical subsets of the WMT’22 Biomedical Translation corpus and evaluate performance on both WMT’22 and Mantra datasets. We introduce the Term Matching Score (TMS) to measure domain terminology accuracy. Results show that fine-tuning improves general translation quality across most language pairs, with domain fluency driving cross-language transfer more than linguistic similarity.
